@@ -13,9 +13,17 @@ class SelectedImage {
 }
 
 Future<SelectedImage?> pickChatImage() async {
+  return pickDeviceImage();
+}
+
+Future<SelectedImage?> pickDeviceImage({bool fromCamera = false}) async {
   final input = html.FileUploadInputElement()
     ..accept = 'image/*'
     ..multiple = false;
+
+  if (fromCamera) {
+    input.setAttribute('capture', 'environment');
+  }
 
   input.click();
   await input.onChange.first;

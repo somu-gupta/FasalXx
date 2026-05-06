@@ -13,3 +13,7 @@ class SelectedImage {
 Future<SelectedImage?> pickChatImage() async {
   return null;
 }
+
+Future<SelectedImage?> pickDeviceImage({bool fromCamera = false}) async {
+  return null;
+}

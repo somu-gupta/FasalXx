@@ -49,6 +49,10 @@
 	</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>FasalX uses the camera to scan crop images for disease detection.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>FasalX uses your photo library to select crop images for disease detection.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

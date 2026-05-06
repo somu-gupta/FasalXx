@@ -1,5 +1,48 @@
 import 'package:flutter/material.dart';
 
+class ProfileData {
+  const ProfileData({
+    required this.name,
+    required this.phone,
+    required this.village,
+    required this.district,
+    required this.state,
+    required this.totalLand,
+    required this.cropTypes,
+    required this.activeCrops,
+  });
+
+  factory ProfileData.demo() {
+    return const ProfileData(
+      name: 'Ramesh Patel',
+      phone: '+91 98765 43210',
+      village: 'Sehore',
+      district: 'Sehore',
+      state: 'Madhya Pradesh',
+      totalLand: '7.5',
+      cropTypes: 'Wheat, Soyabean',
+      activeCrops: '2',
+    );
+  }
+
+  final String name;
+  final String phone;
+  final String village;
+  final String district;
+  final String state;
+  final String totalLand;
+  final String cropTypes;
+  final String activeCrops;
+
+  String get location {
+    final parts = [
+      if (village.trim().isNotEmpty) village.trim(),
+      if (state.trim().isNotEmpty) state.trim(),
+    ];
+    return parts.isEmpty ? 'Location not added' : parts.join(', ');
+  }
+}
+
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -8,6 +51,7 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  ProfileData _profile = ProfileData.demo();
   String _language = 'Hindi';
   bool _voiceAssistant = true;
   bool _notifications = true;
@@ -26,7 +70,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 176),
         children: [
-          const _FarmerProfileCard(),
+          _FarmerProfileCard(
+            profile: _profile,
+            onEdit: _openEditProfile,
+          ),
           const SizedBox(height: 16),
           _SettingsCard(
             language: _language,
@@ -43,22 +90,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             onDarkModeChanged: (value) => setState(() => _darkMode = value),
           ),
           const SizedBox(height: 16),
-          const _SectionCard(
+          _SectionCard(
             title: 'Farm Information',
             subtitle: 'Land, crops, and basic farm data',
             rows: [
-              _ProfileRow(icon: Icons.landscape_outlined, label: 'Land Size', value: '7.5 acres'),
-              _ProfileRow(icon: Icons.grass_outlined, label: 'Crop Types', value: 'Wheat, Soyabean'),
-              _ProfileRow(icon: Icons.map_outlined, label: 'Farm Data', value: '2 fields active'),
-            ],
-          ),
-          const SizedBox(height: 16),
-          const _SectionCard(
-            title: 'Financial & Bank Details',
-            subtitle: 'For marketplace and future payments',
-            rows: [
-              _ProfileRow(icon: Icons.account_balance_outlined, label: 'Bank Account', value: 'Linked'),
-              _ProfileRow(icon: Icons.payments_outlined, label: 'UPI / Payments', value: 'Ready'),
+              _ProfileRow(icon: Icons.landscape_outlined, label: 'Land Size', value: '${_profile.totalLand} acres'),
+              _ProfileRow(icon: Icons.grass_outlined, label: 'Crop Types', value: _profile.cropTypes),
+              _ProfileRow(icon: Icons.map_outlined, label: 'Farm Data', value: '${_profile.activeCrops} fields active'),
             ],
           ),
           const SizedBox(height: 16),
@@ -96,10 +134,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
+
+  Future<void> _openEditProfile() async {
+    final updated = await Navigator.of(context).push<ProfileData>(
+      MaterialPageRoute(builder: (_) => EditProfileScreen(profile: _profile)),
+    );
+
+    if (updated == null || !mounted) return;
+    setState(() => _profile = updated);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Profile updated successfully.')),
+    );
+  }
 }
 
 class _FarmerProfileCard extends StatelessWidget {
-  const _FarmerProfileCard();
+  const _FarmerProfileCard({required this.profile, required this.onEdit});
+
+  final ProfileData profile;
+  final VoidCallback onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -119,13 +172,13 @@ class _FarmerProfileCard extends StatelessWidget {
                 child: const Icon(Icons.person_rounded, color: Color(0xFF16823A), size: 40),
               ),
               const SizedBox(width: 14),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Ramesh Patel',
-                      style: TextStyle(
+                      profile.name,
+                      style: const TextStyle(
                         color: Color(0xFF17251A),
                         fontSize: 22,
                         fontWeight: FontWeight.w900,
@@ -138,9 +191,9 @@ class _FarmerProfileCard extends StatelessWidget {
                         SizedBox(width: 4),
                         Expanded(
                           child: Text(
-                            'Sehore, Madhya Pradesh',
+                            profile.location,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Color(0xFF667366), fontWeight: FontWeight.w700),
+                            style: const TextStyle(color: Color(0xFF667366), fontWeight: FontWeight.w700),
                           ),
                         ),
                       ],
@@ -151,23 +204,270 @@ class _FarmerProfileCard extends StatelessWidget {
               _IconAction(
                 icon: Icons.edit_outlined,
                 tooltip: 'Edit profile',
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Profile edit screen coming soon.')),
-                  );
-                },
+                onTap: onEdit,
               ),
             ],
           ),
           const SizedBox(height: 18),
-          const Row(
+          Row(
             children: [
-              Expanded(child: _StatTile(label: 'Total Land', value: '7.5', unit: 'acres')),
-              SizedBox(width: 12),
-              Expanded(child: _StatTile(label: 'Active Crops', value: '2', unit: 'crops')),
+              Expanded(child: _StatTile(label: 'Total Land', value: profile.totalLand, unit: 'acres')),
+              const SizedBox(width: 12),
+              Expanded(child: _StatTile(label: 'Active Crops', value: profile.activeCrops, unit: 'crops')),
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class EditProfileScreen extends StatefulWidget {
+  const EditProfileScreen({super.key, required this.profile});
+
+  final ProfileData profile;
+
+  @override
+  State<EditProfileScreen> createState() => _EditProfileScreenState();
+}
+
+class _EditProfileScreenState extends State<EditProfileScreen> {
+  late final TextEditingController _name;
+  late final TextEditingController _phone;
+  late final TextEditingController _village;
+  late final TextEditingController _district;
+  late final TextEditingController _state;
+  late final TextEditingController _land;
+  late final TextEditingController _crops;
+  late final TextEditingController _activeCrops;
+
+  @override
+  void initState() {
+    super.initState();
+    _name = TextEditingController(text: widget.profile.name);
+    _phone = TextEditingController(text: widget.profile.phone);
+    _village = TextEditingController(text: widget.profile.village);
+    _district = TextEditingController(text: widget.profile.district);
+    _state = TextEditingController(text: widget.profile.state);
+    _land = TextEditingController(text: widget.profile.totalLand);
+    _crops = TextEditingController(text: widget.profile.cropTypes);
+    _activeCrops = TextEditingController(text: widget.profile.activeCrops);
+  }
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _phone.dispose();
+    _village.dispose();
+    _district.dispose();
+    _state.dispose();
+    _land.dispose();
+    _crops.dispose();
+    _activeCrops.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF7FAF4),
+      appBar: AppBar(
+        title: const Text('Edit Profile', style: TextStyle(fontWeight: FontWeight.w900)),
+        backgroundColor: const Color(0xFFF7FAF4),
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+      ),
+      bottomNavigationBar: Container(
+        padding: EdgeInsets.fromLTRB(16, 12, 16, 16 + MediaQuery.of(context).padding.bottom),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(color: Color(0x14000000), blurRadius: 20, offset: Offset(0, -8)),
+          ],
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(52),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.w900)),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: FilledButton.icon(
+                onPressed: _save,
+                icon: const Icon(Icons.check_rounded),
+                label: const Text('Save'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFF16823A),
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size.fromHeight(52),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
+        children: [
+          _SoftCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const _SectionTitle(
+                  title: 'Personal Details',
+                  subtitle: 'Keep your name and contact updated',
+                ),
+                const SizedBox(height: 14),
+                Center(
+                  child: Stack(
+                    children: [
+                      Container(
+                        width: 86,
+                        height: 86,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEAF7E8),
+                          borderRadius: BorderRadius.circular(28),
+                          border: Border.all(color: const Color(0xFFD6EED2), width: 1.5),
+                        ),
+                        child: const Icon(Icons.person_rounded, color: Color(0xFF16823A), size: 48),
+                      ),
+                      Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: Material(
+                          color: const Color(0xFF16823A),
+                          shape: const CircleBorder(),
+                          child: InkWell(
+                            customBorder: const CircleBorder(),
+                            onTap: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Photo update coming soon.')),
+                              );
+                            },
+                            child: const SizedBox(
+                              width: 34,
+                              height: 34,
+                              child: Icon(Icons.camera_alt_outlined, color: Colors.white, size: 18),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 18),
+                _EditField(controller: _name, label: 'Full Name', icon: Icons.person_outline_rounded),
+                _EditField(controller: _phone, label: 'Mobile Number', icon: Icons.phone_outlined, keyboardType: TextInputType.phone),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          _SoftCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const _SectionTitle(
+                  title: 'Location',
+                  subtitle: 'Used for local mandi, weather, and schemes',
+                ),
+                const SizedBox(height: 14),
+                _EditField(controller: _village, label: 'Village / City', icon: Icons.home_work_outlined),
+                _EditField(controller: _district, label: 'District', icon: Icons.location_city_outlined),
+                _EditField(controller: _state, label: 'State', icon: Icons.map_outlined),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          _SoftCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const _SectionTitle(
+                  title: 'Farm Details',
+                  subtitle: 'Simple farm information for better recommendations',
+                ),
+                const SizedBox(height: 14),
+                _EditField(controller: _land, label: 'Total Land (acres)', icon: Icons.landscape_outlined, keyboardType: TextInputType.number),
+                _EditField(controller: _crops, label: 'Crop Types', icon: Icons.grass_outlined),
+                _EditField(controller: _activeCrops, label: 'Active Crops', icon: Icons.eco_outlined, keyboardType: TextInputType.number),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _save() {
+    if (_name.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter farmer name.')),
+      );
+      return;
+    }
+
+    Navigator.of(context).pop(
+      ProfileData(
+        name: _name.text.trim(),
+        phone: _phone.text.trim(),
+        village: _village.text.trim(),
+        district: _district.text.trim(),
+        state: _state.text.trim(),
+        totalLand: _land.text.trim().isEmpty ? '0' : _land.text.trim(),
+        cropTypes: _crops.text.trim().isEmpty ? 'Not added' : _crops.text.trim(),
+        activeCrops: _activeCrops.text.trim().isEmpty ? '0' : _activeCrops.text.trim(),
+      ),
+    );
+  }
+}
+
+class _EditField extends StatelessWidget {
+  const _EditField({
+    required this.controller,
+    required this.label,
+    required this.icon,
+    this.keyboardType,
+  });
+
+  final TextEditingController controller;
+  final String label;
+  final IconData icon;
+  final TextInputType? keyboardType;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: TextField(
+        controller: controller,
+        keyboardType: keyboardType,
+        textInputAction: TextInputAction.next,
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: Icon(icon, color: const Color(0xFF16823A)),
+          filled: true,
+          fillColor: const Color(0xFFF7FAF4),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: const BorderSide(color: Color(0xFFE3EDE1)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: const BorderSide(color: Color(0xFF16823A), width: 1.5),
+          ),
+        ),
       ),
     );
   }
