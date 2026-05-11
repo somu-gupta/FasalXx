@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../theme/app_theme.dart';
 import '../widgets/fasalx_header.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -11,7 +12,7 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: const FasalXHeader(),
-      backgroundColor: const Color(0xFFF7FAF4),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 18, 16, 204),
         children: const [
@@ -72,21 +73,22 @@ class _GreetingText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fx = context.fx;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Greetings, Kisan!',
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: const Color(0xFF17251A),
-                fontWeight: FontWeight.w900,
-              ),
+            color: fx.textStrong,
+            fontWeight: FontWeight.w900,
+          ),
         ),
         const SizedBox(height: 6),
-        const Text(
+        Text(
           'Here is your farm update today.',
           style: TextStyle(
-            color: Color(0xFF52636F),
+            color: fx.textMuted,
             fontSize: 15.5,
             fontWeight: FontWeight.w600,
           ),
@@ -101,10 +103,11 @@ class _WeatherPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fx = context.fx;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: fx.surface,
         borderRadius: BorderRadius.circular(18),
         boxShadow: const [
           BoxShadow(
@@ -114,21 +117,21 @@ class _WeatherPill extends StatelessWidget {
           ),
         ],
       ),
-      child: const Row(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.wb_sunny_rounded, color: Color(0xFFF59E0B), size: 28),
-          SizedBox(width: 8),
+          Icon(Icons.wb_sunny_rounded, color: fx.warning, size: 28),
+          const SizedBox(width: 8),
           Text(
             '39°C',
             style: TextStyle(
-              color: Color(0xFF17251A),
+              color: fx.textStrong,
               fontSize: 19,
               fontWeight: FontWeight.w900,
             ),
           ),
-          SizedBox(width: 2),
-          Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF6B7A6E)),
+          const SizedBox(width: 2),
+          Icon(Icons.keyboard_arrow_down_rounded, color: fx.textMuted),
         ],
       ),
     );
@@ -140,9 +143,10 @@ class _PestAlertCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fx = context.fx;
     return _TapCard(
-      color: const Color(0xFFFFF1F2),
-      borderColor: const Color(0xFFFFCDD2),
+      color: fx.dangerContainer,
+      borderColor: fx.danger.withAlpha(90),
       borderRadius: 18,
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -156,7 +160,10 @@ class _PestAlertCard extends StatelessWidget {
                 color: const Color(0xFFFFE0E4),
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: const Icon(Icons.warning_amber_rounded, color: Color(0xFFE53935)),
+              child: const Icon(
+                Icons.warning_amber_rounded,
+                color: Color(0xFFE53935),
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -166,15 +173,15 @@ class _PestAlertCard extends StatelessWidget {
                   Text(
                     'Pest Alert: Locust Swarm',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: const Color(0xFFC62828),
-                          fontWeight: FontWeight.w900,
-                        ),
+                      color: fx.danger,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                   const SizedBox(height: 5),
-                  const Text(
+                  Text(
                     'Nearby fields reported pest movement. Inspect leaves and spray only if damage is visible.',
                     style: TextStyle(
-                      color: Color(0xFF7A3338),
+                      color: fx.textStrong,
                       height: 1.35,
                       fontWeight: FontWeight.w600,
                     ),
@@ -185,7 +192,7 @@ class _PestAlertCard extends StatelessWidget {
             IconButton(
               tooltip: 'Dismiss',
               onPressed: () {},
-              icon: const Icon(Icons.close_rounded, color: Color(0xFF9E454A)),
+              icon: Icon(Icons.close_rounded, color: fx.danger),
             ),
           ],
         ),
@@ -207,6 +214,7 @@ class _CropTimelineSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fx = context.fx;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -219,16 +227,16 @@ class _CropTimelineSection extends StatelessWidget {
             Text(
               'Crop Timeline',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    color: const Color(0xFF17251A),
-                  ),
+                fontWeight: FontWeight.w900,
+                color: fx.textStrong,
+              ),
             ),
             const _CropDropdownChip(),
           ],
         ),
         const SizedBox(height: 12),
         _TapCard(
-          color: Colors.white,
+          color: fx.surface,
           borderRadius: 20,
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -236,16 +244,15 @@ class _CropTimelineSection extends StatelessWidget {
             child: Row(
               children: [
                 for (var i = 0; i < _stages.length; i++) ...[
-                  SizedBox(
-                    width: 64,
-                    child: _TimelineStep(data: _stages[i]),
-                  ),
+                  SizedBox(width: 64, child: _TimelineStep(data: _stages[i])),
                   if (i != _stages.length - 1)
                     Container(
                       width: 28,
                       height: 2,
                       margin: const EdgeInsets.only(bottom: 22),
-                      color: i < 2 ? const Color(0xFF57B46B) : const Color(0xFFE0E8DD),
+                      color: i < 2
+                          ? Theme.of(context).colorScheme.primary
+                          : fx.border,
                     ),
                 ],
               ],
@@ -270,8 +277,9 @@ class _CropDropdownChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fx = context.fx;
     return Material(
-      color: Colors.white,
+      color: fx.surface,
       borderRadius: BorderRadius.circular(999),
       child: InkWell(
         borderRadius: BorderRadius.circular(999),
@@ -280,17 +288,24 @@ class _CropDropdownChip extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: const Color(0xFFE0E8DD)),
+            border: Border.all(color: fx.border),
           ),
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 'Wheat (Field A)',
-                style: TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF304136)),
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  color: fx.textStrong,
+                ),
               ),
-              SizedBox(width: 2),
-              Icon(Icons.keyboard_arrow_down_rounded, size: 20),
+              const SizedBox(width: 2),
+              Icon(
+                Icons.keyboard_arrow_down_rounded,
+                size: 20,
+                color: fx.textMuted,
+              ),
             ],
           ),
         ),
@@ -306,7 +321,9 @@ class _TimelineStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = data.isActive ? const Color(0xFF16823A) : const Color(0xFF8A968A);
+    final color = data.isActive
+        ? const Color(0xFF16823A)
+        : const Color(0xFF8A968A);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -316,10 +333,14 @@ class _TimelineStep extends StatelessWidget {
           width: data.isActive ? 48 : 42,
           height: data.isActive ? 48 : 42,
           decoration: BoxDecoration(
-            color: data.isActive ? const Color(0xFFEAF7E8) : const Color(0xFFF4F7F2),
+            color: data.isActive
+                ? const Color(0xFFEAF7E8)
+                : const Color(0xFFF4F7F2),
             shape: BoxShape.circle,
             border: Border.all(
-              color: data.isActive ? const Color(0xFF16823A) : const Color(0xFFE0E8DD),
+              color: data.isActive
+                  ? const Color(0xFF16823A)
+                  : const Color(0xFFE0E8DD),
               width: data.isActive ? 2 : 1,
             ),
           ),
@@ -348,8 +369,9 @@ class _SensorDataCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fx = context.fx;
     return _TapCard(
-      color: Colors.white,
+      color: fx.surface,
       borderRadius: 22,
       child: Padding(
         padding: const EdgeInsets.all(18),
@@ -361,9 +383,9 @@ class _SensorDataCard extends StatelessWidget {
                   child: Text(
                     'IoT Sensor Data',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w900,
-                          color: const Color(0xFF17251A),
-                        ),
+                      fontWeight: FontWeight.w900,
+                      color: fx.textStrong,
+                    ),
                   ),
                 ),
                 const _LiveSyncBadge(),
@@ -403,21 +425,26 @@ class _LiveSyncBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fx = context.fx;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFFEAF7E8),
+        color: fx.selectedFill,
         borderRadius: BorderRadius.circular(999),
       ),
-      child: const Row(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.sync_rounded, size: 15, color: Color(0xFF16823A)),
-          SizedBox(width: 5),
+          Icon(
+            Icons.sync_rounded,
+            size: 15,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(width: 5),
           Text(
             'Live sync',
             style: TextStyle(
-              color: Color(0xFF16823A),
+              color: Theme.of(context).colorScheme.primary,
               fontWeight: FontWeight.w900,
               fontSize: 12,
             ),
@@ -433,6 +460,7 @@ class _NpkChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fx = context.fx;
     return Column(
       children: [
         SizedBox(
@@ -440,14 +468,14 @@ class _NpkChart extends StatelessWidget {
           height: 132,
           child: CustomPaint(
             painter: _NpkPainter(),
-            child: const Center(
+            child: Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     'NPK',
                     style: TextStyle(
-                      color: Color(0xFF17251A),
+                      color: fx.textStrong,
                       fontSize: 18,
                       fontWeight: FontWeight.w900,
                     ),
@@ -455,7 +483,7 @@ class _NpkChart extends StatelessWidget {
                   Text(
                     'Good',
                     style: TextStyle(
-                      color: Color(0xFF16823A),
+                      color: Theme.of(context).colorScheme.primary,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -522,10 +550,7 @@ class _ChartSegment {
 }
 
 class _LegendDot extends StatelessWidget {
-  const _LegendDot({
-    required this.label,
-    required this.color,
-  });
+  const _LegendDot({required this.label, required this.color});
 
   final String label;
   final Color color;
@@ -554,11 +579,26 @@ class _SensorMetrics extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Column(
       children: [
-        _MetricBar(label: 'Soil Moisture', value: '64%', progress: 0.64, color: Color(0xFF3B82F6)),
+        _MetricBar(
+          label: 'Soil Moisture',
+          value: '64%',
+          progress: 0.64,
+          color: Color(0xFF3B82F6),
+        ),
         SizedBox(height: 14),
-        _MetricBar(label: 'Soil Temperature', value: '31°C', progress: 0.58, color: Color(0xFFF59E0B)),
+        _MetricBar(
+          label: 'Soil Temperature',
+          value: '31°C',
+          progress: 0.58,
+          color: Color(0xFFF59E0B),
+        ),
         SizedBox(height: 14),
-        _MetricBar(label: 'Humidity', value: '72%', progress: 0.72, color: Color(0xFF16823A)),
+        _MetricBar(
+          label: 'Humidity',
+          value: '72%',
+          progress: 0.72,
+          color: Color(0xFF16823A),
+        ),
       ],
     );
   }
@@ -579,6 +619,7 @@ class _MetricBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fx = context.fx;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -586,12 +627,18 @@ class _MetricBar extends StatelessWidget {
           children: [
             Text(
               label,
-              style: const TextStyle(color: Color(0xFF435246), fontWeight: FontWeight.w800),
+              style: TextStyle(
+                color: fx.textMuted,
+                fontWeight: FontWeight.w800,
+              ),
             ),
             const Spacer(),
             Text(
               value,
-              style: const TextStyle(color: Color(0xFF17251A), fontWeight: FontWeight.w900),
+              style: TextStyle(
+                color: fx.textStrong,
+                fontWeight: FontWeight.w900,
+              ),
             ),
           ],
         ),
@@ -601,7 +648,7 @@ class _MetricBar extends StatelessWidget {
           child: LinearProgressIndicator(
             value: progress,
             minHeight: 10,
-            backgroundColor: const Color(0xFFE8EFE4),
+            backgroundColor: fx.fieldFill,
             valueColor: AlwaysStoppedAnimation<Color>(color),
           ),
         ),
@@ -619,11 +666,7 @@ class _MandiFinanceSection extends StatelessWidget {
       builder: (context, constraints) {
         if (constraints.maxWidth < 520) {
           return const Column(
-            children: [
-              _MandiPriceCard(),
-              SizedBox(height: 14),
-              _FinanceCard(),
-            ],
+            children: [_MandiPriceCard(), SizedBox(height: 14), _FinanceCard()],
           );
         }
 
@@ -645,27 +688,36 @@ class _MandiPriceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fx = context.fx;
     return _TapCard(
-      color: const Color(0xFFFFFCF2),
+      color: fx.warningContainer,
       borderRadius: 20,
       child: Padding(
         padding: const EdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
+          children: [
             Row(
               children: [
-                Icon(Icons.location_on_rounded, color: Color(0xFF16823A), size: 24),
-                SizedBox(width: 8),
+                Icon(
+                  Icons.location_on_rounded,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 24,
+                ),
+                const SizedBox(width: 8),
                 Text(
                   'Bhopal Mandi',
-                  style: TextStyle(color: Color(0xFF17251A), fontSize: 17, fontWeight: FontWeight.w900),
+                  style: TextStyle(
+                    color: fx.textStrong,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ],
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             _PriceRow(crop: 'Wheat', price: '₹2,300 / Quintal'),
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
             _PriceRow(crop: 'Soyabean', price: '₹4,500 / Quintal'),
           ],
         ),
@@ -675,21 +727,25 @@ class _MandiPriceCard extends StatelessWidget {
 }
 
 class _PriceRow extends StatelessWidget {
-  const _PriceRow({
-    required this.crop,
-    required this.price,
-  });
+  const _PriceRow({required this.crop, required this.price});
 
   final String crop;
   final String price;
 
   @override
   Widget build(BuildContext context) {
+    final fx = context.fx;
     return Row(
       children: [
-        Text(crop, style: const TextStyle(color: Color(0xFF4D5D4F), fontWeight: FontWeight.w800)),
+        Text(
+          crop,
+          style: TextStyle(color: fx.textMuted, fontWeight: FontWeight.w800),
+        ),
         const Spacer(),
-        Text(price, style: const TextStyle(color: Color(0xFF17251A), fontWeight: FontWeight.w900)),
+        Text(
+          price,
+          style: TextStyle(color: fx.textStrong, fontWeight: FontWeight.w900),
+        ),
       ],
     );
   }
@@ -720,13 +776,21 @@ class _FinanceCard extends StatelessWidget {
               children: [
                 Text(
                   'Finances (Est)',
-                  style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w900),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
                 Spacer(),
                 CircleAvatar(
                   radius: 18,
                   backgroundColor: Color(0x29FFFFFF),
-                  child: Icon(Icons.calculate_outlined, color: Colors.white, size: 20),
+                  child: Icon(
+                    Icons.calculate_outlined,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                 ),
               ],
             ),
@@ -744,10 +808,7 @@ class _FinanceCard extends StatelessWidget {
 }
 
 class _FinanceRow extends StatelessWidget {
-  const _FinanceRow({
-    required this.label,
-    required this.value,
-  });
+  const _FinanceRow({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -756,9 +817,21 @@ class _FinanceRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Text(label, style: const TextStyle(color: Color(0xD9FFFFFF), fontWeight: FontWeight.w700)),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Color(0xD9FFFFFF),
+            fontWeight: FontWeight.w700,
+          ),
+        ),
         const Spacer(),
-        Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900)),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
       ],
     );
   }
@@ -779,17 +852,26 @@ class _TapCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fx = context.fx;
+    final effectiveColor = Theme.of(context).brightness == Brightness.dark
+        ? (color == Colors.transparent ? Colors.transparent : fx.surface)
+        : color;
+    final effectiveBorder = Theme.of(context).brightness == Brightness.dark
+        ? borderColor ?? fx.border
+        : borderColor;
     return Material(
-      color: color,
+      color: effectiveColor,
       borderRadius: BorderRadius.circular(borderRadius),
       child: InkWell(
         borderRadius: BorderRadius.circular(borderRadius),
         onTap: () {},
         child: Ink(
           decoration: BoxDecoration(
-            color: color,
+            color: effectiveColor,
             borderRadius: BorderRadius.circular(borderRadius),
-            border: borderColor == null ? null : Border.all(color: borderColor!),
+            border: effectiveBorder == null
+                ? null
+                : Border.all(color: effectiveBorder),
             boxShadow: const [
               BoxShadow(
                 color: Color(0x12000000),
@@ -806,10 +888,7 @@ class _TapCard extends StatelessWidget {
 }
 
 class _AnimatedDashboardCard extends StatelessWidget {
-  const _AnimatedDashboardCard({
-    required this.child,
-    required this.delay,
-  });
+  const _AnimatedDashboardCard({required this.child, required this.delay});
 
   final Widget child;
   final int delay;

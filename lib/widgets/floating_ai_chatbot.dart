@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../services/image_input_service.dart';
+import '../theme/app_theme.dart';
 
 class FloatingAiChatbot extends StatefulWidget {
   const FloatingAiChatbot({super.key});
@@ -36,8 +37,8 @@ class _FloatingAiChatbotState extends State<FloatingAiChatbot>
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return Positioned(
-      right: 18,
-      bottom: 112 + bottomPadding,
+      right: 22,
+      bottom: 118 + bottomPadding,
       child: SafeArea(
         child: AnimatedBuilder(
           animation: _idleController,
@@ -94,6 +95,9 @@ class _AssistantFab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final fx = context.fx;
+
     return Semantics(
       button: true,
       label: 'Open FasalX AI assistant',
@@ -104,16 +108,16 @@ class _AssistantFab extends StatelessWidget {
         child: Container(
           width: 62,
           height: 62,
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: Color(0x4014532D),
+                color: colorScheme.primary.withAlpha(64),
                 blurRadius: 22,
-                offset: Offset(0, 10),
+                offset: const Offset(0, 10),
               ),
               BoxShadow(
-                color: Color(0x2616823A),
+                color: fx.success.withAlpha(38),
                 blurRadius: 34,
                 spreadRadius: 3,
               ),
@@ -124,12 +128,12 @@ class _AssistantFab extends StatelessWidget {
             shape: const CircleBorder(),
             clipBehavior: Clip.antiAlias,
             child: Ink(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Color(0xFF1FA64A), Color(0xFF14532D)],
+                  colors: [fx.success, colorScheme.primaryContainer],
                 ),
               ),
               child: InkWell(
@@ -153,9 +157,9 @@ class _AssistantFab extends StatelessWidget {
                         width: 10,
                         height: 10,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFE53935),
+                          color: fx.danger,
                           shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 1.7),
+                          border: Border.all(color: fx.surface, width: 1.7),
                         ),
                       ),
                     ),
@@ -201,7 +205,8 @@ class _ChatSheetState extends State<_ChatSheet> {
   bool _isVoiceListening = false;
   final List<_ChatMessage> _messages = [
     const _ChatMessage(
-      text: 'Namaste! Main FasalX AI hoon. Aap fasal, mausam ya dawa ke baare mein pooch sakte hain.',
+      text:
+          'Namaste! Main FasalX AI hoon. Aap fasal, mausam ya dawa ke baare mein pooch sakte hain.',
       isUser: false,
     ),
     const _ChatMessage(
@@ -225,16 +230,11 @@ class _ChatSheetState extends State<_ChatSheet> {
     }
 
     setState(() {
-      _messages.add(
-        _ChatMessage(
-          text: text,
-          image: image,
-          isUser: true,
-        ),
-      );
+      _messages.add(_ChatMessage(text: text, image: image, isUser: true));
       _messages.add(
         const _ChatMessage(
-          text: 'Photo/detail mil gayi. Kripya crop name, location, aur symptoms bhi bhejein. Main simple next steps bataunga.',
+          text:
+              'Photo/detail mil gayi. Kripya crop name, location, aur symptoms bhi bhejein. Main simple next steps bataunga.',
           isUser: false,
         ),
       );
@@ -253,7 +253,9 @@ class _ChatSheetState extends State<_ChatSheet> {
     if (image == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Image select nahi hui. Chrome par photo attach kar sakte hain.'),
+          content: Text(
+            'Image select nahi hui. Chrome par photo attach kar sakte hain.',
+          ),
         ),
       );
       return;
@@ -298,6 +300,7 @@ class _ChatSheetState extends State<_ChatSheet> {
     final keyboard = MediaQuery.viewInsetsOf(context).bottom;
     final isWide = size.width > 700;
     final sheetHeight = size.height * (isWide ? 0.78 : 0.86);
+    final fx = context.fx;
 
     return AnimatedPadding(
       duration: const Duration(milliseconds: 220),
@@ -311,10 +314,12 @@ class _ChatSheetState extends State<_ChatSheet> {
             maxHeight: sheetHeight,
           ),
           child: DecoratedBox(
-            decoration: const BoxDecoration(
-              color: Color(0xFFFAFCF7),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-              boxShadow: [
+            decoration: BoxDecoration(
+              color: fx.surfaceAlt,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(28),
+              ),
+              boxShadow: const [
                 BoxShadow(
                   color: Color(0x33000000),
                   blurRadius: 30,
@@ -323,7 +328,9 @@ class _ChatSheetState extends State<_ChatSheet> {
               ],
             ),
             child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(28),
+              ),
               child: Column(
                 children: [
                   const _ChatHeader(),
@@ -332,7 +339,7 @@ class _ChatSheetState extends State<_ChatSheet> {
                       controller: _scrollController,
                       padding: const EdgeInsets.fromLTRB(18, 16, 18, 20),
                       itemCount: _messages.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 10),
+                      separatorBuilder: (_, _) => const SizedBox(height: 10),
                       itemBuilder: (context, index) {
                         return _MessageBubble(message: _messages[index]);
                       },
@@ -362,11 +369,13 @@ class _ChatHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final onPrimary = colorScheme.onPrimary;
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 12, 10, 14),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFF14532D), Color(0xFF2E7D32)],
+          colors: [colorScheme.primaryContainer, colorScheme.primary],
         ),
       ),
       child: Row(
@@ -378,32 +387,32 @@ class _ChatHeader extends StatelessWidget {
               color: const Color(0x24FFFFFF),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: const Icon(Icons.auto_awesome_rounded, color: Colors.white),
+            child: Icon(Icons.auto_awesome_rounded, color: onPrimary),
           ),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'FasalX AI Sahayak',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: onPrimary,
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                SizedBox(height: 2),
+                const SizedBox(height: 2),
                 Text(
                   'Hindi + English farming help',
-                  style: TextStyle(color: Color(0xFFE7F7E1), fontSize: 13),
+                  style: TextStyle(color: onPrimary, fontSize: 13),
                 ),
               ],
             ),
           ),
           IconButton(
             tooltip: 'Close',
-            icon: const Icon(Icons.close_rounded, color: Colors.white),
+            icon: Icon(Icons.close_rounded, color: onPrimary),
             onPressed: () => Navigator.of(context).pop(),
           ),
         ],
@@ -419,9 +428,16 @@ class _MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final alignment = message.isUser ? Alignment.centerRight : Alignment.centerLeft;
-    final bubbleColor = message.isUser ? const Color(0xFF14532D) : Colors.white;
-    final textColor = message.isUser ? Colors.white : const Color(0xFF18251B);
+    final alignment = message.isUser
+        ? Alignment.centerRight
+        : Alignment.centerLeft;
+    final fx = context.fx;
+    final bubbleColor = message.isUser
+        ? Theme.of(context).colorScheme.primary
+        : fx.surface;
+    final textColor = message.isUser
+        ? Theme.of(context).colorScheme.onPrimary
+        : fx.textStrong;
     final radius = BorderRadius.only(
       topLeft: const Radius.circular(18),
       topRight: const Radius.circular(18),
@@ -437,7 +453,7 @@ class _MessageBubble extends StatelessWidget {
           decoration: BoxDecoration(
             color: bubbleColor,
             borderRadius: radius,
-            border: message.isUser ? null : Border.all(color: const Color(0xFFE3EBDD)),
+            border: message.isUser ? null : Border.all(color: fx.border),
             boxShadow: const [
               BoxShadow(
                 color: Color(0x12000000),
@@ -465,11 +481,7 @@ class _MessageBubble extends StatelessWidget {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        Icons.image_outlined,
-                        size: 16,
-                        color: textColor,
-                      ),
+                      Icon(Icons.image_outlined, size: 16, color: textColor),
                       const SizedBox(width: 6),
                       Flexible(
                         child: Text(
@@ -526,20 +538,18 @@ class _Composer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fx = context.fx;
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 16),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0xFFE5EDE0))),
+      decoration: BoxDecoration(
+        color: fx.surface,
+        border: Border(top: BorderSide(color: fx.border)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (image != null) ...[
-            _ImagePreview(
-              image: image!,
-              onRemove: onRemoveImage,
-            ),
+            _ImagePreview(image: image!, onRemove: onRemoveImage),
             const SizedBox(height: 10),
           ],
           Row(
@@ -573,8 +583,11 @@ class _Composer extends StatelessWidget {
                   decoration: InputDecoration(
                     hintText: 'Sawaal ya photo detail...',
                     filled: true,
-                    fillColor: const Color(0xFFF4F8F1),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    fillColor: fx.fieldFill,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(18),
                       borderSide: BorderSide.none,
@@ -590,8 +603,8 @@ class _Composer extends StatelessWidget {
                   tooltip: 'Send',
                   onPressed: onSend,
                   style: IconButton.styleFrom(
-                    backgroundColor: const Color(0xFF14532D),
-                    foregroundColor: Colors.white,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   ),
                   icon: const Icon(Icons.send_rounded),
                 ),
@@ -605,22 +618,20 @@ class _Composer extends StatelessWidget {
 }
 
 class _ImagePreview extends StatelessWidget {
-  const _ImagePreview({
-    required this.image,
-    required this.onRemove,
-  });
+  const _ImagePreview({required this.image, required this.onRemove});
 
   final SelectedImage image;
   final VoidCallback onRemove;
 
   @override
   Widget build(BuildContext context) {
+    final fx = context.fx;
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: const Color(0xFFF4F8F1),
+        color: fx.fieldFill,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFDCE8D5)),
+        border: Border.all(color: fx.border),
       ),
       child: Row(
         children: [
@@ -638,18 +649,18 @@ class _ImagePreview extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Photo attached',
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF18251B),
+                    color: fx.textStrong,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   image.name,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Color(0xFF516153)),
+                  style: TextStyle(color: fx.textMuted),
                 ),
               ],
             ),
@@ -666,16 +677,14 @@ class _ImagePreview extends StatelessWidget {
 }
 
 class _VoiceInputButton extends StatelessWidget {
-  const _VoiceInputButton({
-    required this.isListening,
-    required this.onTap,
-  });
+  const _VoiceInputButton({required this.isListening, required this.onTap});
 
   final bool isListening;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final fx = context.fx;
     return Stack(
       alignment: Alignment.center,
       children: [
@@ -689,7 +698,7 @@ class _VoiceInputButton extends StatelessWidget {
             height: isListening ? 48 : 40,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: isListening ? const Color(0xFFEAF7E8) : Colors.transparent,
+              color: isListening ? fx.selectedFill : Colors.transparent,
             ),
           ),
         ),
@@ -697,9 +706,8 @@ class _VoiceInputButton extends StatelessWidget {
           tooltip: isListening ? 'Listening' : 'Voice input',
           onPressed: onTap,
           style: IconButton.styleFrom(
-            backgroundColor:
-                isListening ? const Color(0xFFDDF4D8) : const Color(0xFFEAF0E7),
-            foregroundColor: const Color(0xFF14532D),
+            backgroundColor: isListening ? fx.selectedFill : fx.fieldFill,
+            foregroundColor: Theme.of(context).colorScheme.primary,
           ),
           icon: AnimatedSwitcher(
             duration: const Duration(milliseconds: 180),
@@ -716,8 +724,8 @@ class _VoiceInputButton extends StatelessWidget {
             child: Container(
               width: 8,
               height: 8,
-              decoration: const BoxDecoration(
-                color: Color(0xFFE53935),
+              decoration: BoxDecoration(
+                color: fx.danger,
                 shape: BoxShape.circle,
               ),
             ),
@@ -728,11 +736,7 @@ class _VoiceInputButton extends StatelessWidget {
 }
 
 class _ChatMessage {
-  const _ChatMessage({
-    required this.text,
-    required this.isUser,
-    this.image,
-  });
+  const _ChatMessage({required this.text, required this.isUser, this.image});
 
   final String text;
   final bool isUser;

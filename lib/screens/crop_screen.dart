@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../widgets/fasalx_header.dart';
+
 class CropScreen extends StatelessWidget {
   const CropScreen({super.key});
 
@@ -27,13 +29,18 @@ class _SimpleScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
+      appBar: const FasalXHeader(),
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, size: 56),
             const SizedBox(height: 16),
+            Text(
+              title,
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 8),
             Text(message),
           ],
         ),

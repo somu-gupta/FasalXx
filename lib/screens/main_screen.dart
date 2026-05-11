@@ -6,6 +6,7 @@ import 'profile_screen.dart';
 import 'schemes_screen.dart';
 import 'store_screen.dart';
 import '../widgets/floating_ai_chatbot.dart';
+import '../theme/app_theme.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -29,6 +30,7 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       extendBody: true,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
           AnimatedSwitcher(
@@ -40,7 +42,7 @@ class _MainScreenState extends State<MainScreen> {
               child: _screens[_selectedIndex],
             ),
           ),
-          const FloatingAiChatbot(),
+          if (_selectedIndex == 0) const FloatingAiChatbot(),
         ],
       ),
       bottomNavigationBar: _PremiumBottomNavBar(
@@ -65,6 +67,7 @@ class _PremiumBottomNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final fx = context.fx;
 
     return SizedBox(
       height: 108 + bottomPadding,
@@ -75,10 +78,12 @@ class _PremiumBottomNavBar extends StatelessWidget {
           Container(
             height: 82 + bottomPadding,
             padding: EdgeInsets.fromLTRB(12, 9, 12, 11 + bottomPadding),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-              boxShadow: [
+            decoration: BoxDecoration(
+              color: fx.surface,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(28),
+              ),
+              boxShadow: const [
                 BoxShadow(
                   color: Color(0x1F000000),
                   blurRadius: 28,
@@ -143,16 +148,16 @@ class _PremiumBottomNavBar extends StatelessWidget {
 }
 
 class _HealthFab extends StatelessWidget {
-  const _HealthFab({
-    required this.isActive,
-    required this.onTap,
-  });
+  const _HealthFab({required this.isActive, required this.onTap});
 
   final bool isActive;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final fx = context.fx;
+
     return GestureDetector(
       onTap: onTap,
       child: AnimatedScale(
@@ -165,18 +170,18 @@ class _HealthFab extends StatelessWidget {
           width: 74,
           height: 74,
           decoration: BoxDecoration(
-            color: const Color(0xFF14532D),
+            color: colorScheme.primary,
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
                 color: isActive
-                    ? const Color(0x5C14532D)
-                    : const Color(0x3D14532D),
+                    ? colorScheme.primary.withAlpha(92)
+                    : colorScheme.primary.withAlpha(61),
                 blurRadius: isActive ? 24 : 18,
                 offset: const Offset(0, 10),
               ),
             ],
-            border: Border.all(color: Colors.white, width: 6),
+            border: Border.all(color: fx.surface, width: 6),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -218,8 +223,9 @@ class _BottomNavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final activeColor = const Color(0xFF14532D);
-    final inactiveColor = Colors.grey.shade500;
+    final fx = context.fx;
+    final activeColor = fx.bottomNavActive;
+    final inactiveColor = fx.bottomNavInactive;
 
     return Semantics(
       button: true,
@@ -233,7 +239,7 @@ class _BottomNavItem extends StatelessWidget {
           curve: Curves.easeOutCubic,
           padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
           decoration: BoxDecoration(
-            color: isActive ? const Color(0xFFEAF6E8) : Colors.transparent,
+            color: isActive ? fx.selectedFill : Colors.transparent,
             borderRadius: BorderRadius.circular(18),
           ),
           child: Column(
@@ -257,11 +263,14 @@ class _BottomNavItem extends StatelessWidget {
                       right: -9,
                       top: -7,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 5,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFE53935),
+                          color: fx.danger,
                           borderRadius: BorderRadius.circular(999),
-                          border: Border.all(color: Colors.white, width: 1.5),
+                          border: Border.all(color: fx.surface, width: 1.5),
                         ),
                         child: Text(
                           badge!,
