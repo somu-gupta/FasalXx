@@ -73,10 +73,23 @@ class ProfileData {
       village: user.city,
       district: user.city,
       state: user.state,
-      totalLand: farm.size.isEmpty ? '0' : '${farm.size} ${farm.unit}',
+      totalLand: _formatFarmSize(farm.size, farm.unit),
       cropTypes: farm.crops.isEmpty ? 'Not added' : farm.crops.join(', '),
       activeCrops: farm.crops.length.toString(),
     );
+  }
+
+  static String _formatFarmSize(String size, String unit) {
+    final trimmedSize = size.trim();
+    final trimmedUnit = unit.trim();
+    if (trimmedSize.isEmpty) return '0';
+    if (trimmedUnit.isEmpty) return trimmedSize;
+
+    final lowerSize = trimmedSize.toLowerCase();
+    final lowerUnit = trimmedUnit.toLowerCase();
+    if (lowerSize.contains(lowerUnit)) return trimmedSize;
+
+    return '$trimmedSize $trimmedUnit';
   }
 }
 
@@ -252,9 +265,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _openFarmSetup() {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => const FarmSetupScreen()));
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const FarmSetupScreen(returnToPreviousScreen: true),
+      ),
+    );
   }
 }
 
@@ -346,7 +361,7 @@ class _FarmerProfileCard extends StatelessWidget {
                 child: _StatTile(
                   label: 'Total Land',
                   value: profile.totalLand,
-                  unit: 'acres',
+                  unit: '',
                 ),
               ),
               const SizedBox(width: 12),
@@ -597,7 +612,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 const SizedBox(height: 14),
                 _EditField(
                   controller: _land,
-                  label: 'Total Land (acres)',
+                  label: 'Total Land',
                   icon: Icons.landscape_outlined,
                   keyboardType: TextInputType.number,
                 ),
@@ -770,6 +785,7 @@ class _StatTile extends StatelessWidget {
         ? normalizedUnit.substring(0, normalizedUnit.length - 1)
         : normalizedUnit;
     final shouldShowUnit =
+        unit.isNotEmpty &&
         !normalizedValue.contains(normalizedUnit) &&
         !normalizedValue.contains(singularUnit);
 

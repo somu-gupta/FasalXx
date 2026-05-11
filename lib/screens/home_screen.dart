@@ -2,66 +2,457 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../services/auth_controller.dart';
 import '../theme/app_theme.dart';
 import '../widgets/fasalx_header.dart';
 
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({
+    super.key,
+    this.onOpenIot,
+    this.onOpenCropDetails,
+    this.onOpenCropTimeline,
+    this.onOpenMandiPrice,
+    this.onOpenFinanceAnalytics,
+  });
+
+  final VoidCallback? onOpenIot;
+  final ValueChanged<String>? onOpenCropDetails;
+  final VoidCallback? onOpenCropTimeline;
+  final VoidCallback? onOpenMandiPrice;
+  final VoidCallback? onOpenFinanceAnalytics;
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  bool _isAlertDismissed = false;
+  int _cropChangeCounter = 0;
+
+  void _openDashboardDetail(String title, IconData icon, String message) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) =>
+            _DashboardDetailScreen(title: title, icon: icon, message: message),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final alert = _dashboardAlerts.firstWhere((item) => item.isHighPriority);
+
     return Scaffold(
       appBar: const FasalXHeader(),
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 18, 16, 204),
-        children: const [
-          _AnimatedDashboardCard(delay: 0, child: _GreetingCard()),
-          SizedBox(height: 14),
-          _AnimatedDashboardCard(delay: 80, child: _PestAlertCard()),
-          SizedBox(height: 22),
-          _AnimatedDashboardCard(delay: 140, child: _CropTimelineSection()),
-          SizedBox(height: 18),
-          _AnimatedDashboardCard(delay: 200, child: _SensorDataCard()),
-          SizedBox(height: 18),
-          _AnimatedDashboardCard(delay: 260, child: _MandiFinanceSection()),
+        children: [
+          const _AnimatedDashboardCard(delay: 0, child: _GreetingCard()),
+          if (!_isAlertDismissed) ...[
+            const SizedBox(height: 14),
+            _AnimatedDashboardCard(
+              delay: 80,
+              child: _PestAlertCard(
+                alert: alert,
+                onDismiss: () => setState(() => _isAlertDismissed = true),
+              ),
+            ),
+          ],
+          const SizedBox(height: 22),
+          _AnimatedDashboardCard(
+            delay: 100,
+            child: _MyCropsSection(
+              onCropsChanged: () => setState(() => _cropChangeCounter++),
+              onOpenCropDetails: widget.onOpenCropDetails,
+            ),
+          ),
+          const SizedBox(height: 18),
+          _AnimatedDashboardCard(
+            delay: 140,
+            child: _CropTimelineSection(
+              key: ValueKey(_cropChangeCounter),
+              onTap:
+                  widget.onOpenCropTimeline ??
+                  () => _openDashboardDetail(
+                    'Crop Timeline',
+                    Icons.timeline_rounded,
+                    'Crop stage planning and farm tasks are ready from your dashboard.',
+                  ),
+            ),
+          ),
+          const SizedBox(height: 18),
+          _AnimatedDashboardCard(
+            delay: 180,
+            child: _SensorDataCard(
+              onTap:
+                  widget.onOpenIot ??
+                  () => _openDashboardDetail(
+                    'IoT Monitoring',
+                    Icons.sensors_rounded,
+                    'Live soil moisture, NPK, humidity, and field sensor readings.',
+                  ),
+            ),
+          ),
+          const SizedBox(height: 18),
+          _AnimatedDashboardCard(
+            delay: 220,
+            child: _MandiFinanceSection(
+              onOpenMandiPrice:
+                  widget.onOpenMandiPrice ??
+                  () => _openDashboardDetail(
+                    'Mandi Prices',
+                    Icons.storefront_rounded,
+                    'Nearby mandi prices and crop trend tracking.',
+                  ),
+              onOpenFinanceAnalytics:
+                  widget.onOpenFinanceAnalytics ??
+                  () => _openDashboardDetail(
+                    'Finance Analytics',
+                    Icons.calculate_outlined,
+                    'Estimated expenses, yield, and profit for your active farm.',
+                  ),
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-class _GreetingCard extends StatelessWidget {
+class _DashboardAlert {
+  const _DashboardAlert({
+    required this.title,
+    required this.message,
+    required this.isHighPriority,
+  });
+
+  final String title;
+  final String message;
+  final bool isHighPriority;
+}
+
+const _dashboardAlerts = [
+  _DashboardAlert(
+    title: 'Pest Alert: Locust Swarm',
+    message:
+        'Nearby fields reported pest movement. Inspect leaves and spray only if damage is visible.',
+    isHighPriority: true,
+  ),
+  _DashboardAlert(
+    title: 'Irrigation Reminder',
+    message:
+        'Wheat field moisture is slightly low. Plan irrigation in the next 2 days.',
+    isHighPriority: false,
+  ),
+];
+
+class _DashboardData {
+  const _DashboardData._();
+
+  static AppUser? get _user => AuthController.instance.currentUser;
+  static FarmProfile get _farm => _user?.farm ?? const FarmProfile.empty();
+
+  static String get firstName {
+    final name = _user?.name.trim() ?? '';
+    final parts = name.split(RegExp(r'\s+'));
+    return parts.isEmpty || parts.first.isEmpty ? 'Kisan' : parts.first;
+  }
+
+  static List<String> get crops {
+    final selected = _farm.crops
+        .map((crop) => canonicalCrop(crop))
+        .where((crop) => crop.isNotEmpty)
+        .toSet()
+        .toList();
+    return selected.isEmpty
+        ? const ['Wheat', 'Rice', 'Soybean', 'Tomato', 'Cotton', 'Maize']
+        : selected;
+  }
+
+  static String canonicalCrop(String crop) {
+    final normalized = crop.trim().toLowerCase();
+    switch (normalized) {
+      case 'soyabean':
+      case 'soybean':
+        return 'Soybean';
+      case 'rice':
+        return 'Rice';
+      case 'wheat':
+        return 'Wheat';
+      case 'tomato':
+        return 'Tomato';
+      case 'cotton':
+        return 'Cotton';
+      case 'maize':
+        return 'Maize';
+      default:
+        return crop.trim();
+    }
+  }
+
+  static int stageIndexFor(String crop) {
+    switch (canonicalCrop(crop)) {
+      case 'Rice':
+      case 'Maize':
+        return 3;
+      case 'Soybean':
+        return 1;
+      case 'Tomato':
+        return 4;
+      default:
+        return 2;
+    }
+  }
+}
+
+class _GreetingCard extends StatefulWidget {
   const _GreetingCard();
 
   @override
+  State<_GreetingCard> createState() => _GreetingCardState();
+}
+
+class _GreetingCardState extends State<_GreetingCard> {
+  bool _isWeatherExpanded = false;
+  final _forecastController = ScrollController();
+
+  @override
+  void dispose() {
+    _forecastController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final fx = context.fx;
     return _TapCard(
       color: const Color(0xFFEAF7FF),
       borderRadius: 20,
       child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            if (constraints.maxWidth < 360) {
-              return const Column(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+        child: AnimatedSize(
+          duration: const Duration(milliseconds: 260),
+          curve: Curves.easeOutCubic,
+          alignment: Alignment.topCenter,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isNarrow = constraints.maxWidth < 360;
+              final header = isNarrow
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const _GreetingText(),
+                        const SizedBox(height: 10),
+                        _WeatherSummary(
+                          isExpanded: _isWeatherExpanded,
+                          onTap: () => setState(
+                            () => _isWeatherExpanded = !_isWeatherExpanded,
+                          ),
+                        ),
+                      ],
+                    )
+                  : Row(
+                      children: [
+                        const Expanded(child: _GreetingText()),
+                        const SizedBox(width: 10),
+                        _WeatherSummary(
+                          isExpanded: _isWeatherExpanded,
+                          onTap: () => setState(
+                            () => _isWeatherExpanded = !_isWeatherExpanded,
+                          ),
+                        ),
+                      ],
+                    );
+
+              return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _GreetingText(),
-                  SizedBox(height: 14),
-                  _WeatherPill(),
+                  header,
+                  if (_isWeatherExpanded) ...[
+                    const SizedBox(height: 12),
+                    Container(height: 1, color: fx.border),
+                    const SizedBox(height: 8),
+                    _ForecastStrip(controller: _forecastController),
+                  ],
                 ],
               );
-            }
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
 
-            return const Row(
-              children: [
-                Expanded(child: _GreetingText()),
-                SizedBox(width: 14),
-                _WeatherPill(),
-              ],
-            );
-          },
+class _ForecastDay {
+  const _ForecastDay(
+    this.day,
+    this.date,
+    this.icon,
+    this.temperature, {
+    this.isToday = false,
+  });
+
+  final String day;
+  final String date;
+  final IconData icon;
+  final String temperature;
+  final bool isToday;
+}
+
+class _ForecastStrip extends StatelessWidget {
+  const _ForecastStrip({required this.controller});
+
+  final ScrollController controller;
+
+  static const _forecast = [
+    _ForecastDay('MON', '12 Aug', Icons.cloud_outlined, '36°'),
+    _ForecastDay('TUE', '13 Aug', Icons.water_drop_outlined, '35°'),
+    _ForecastDay('WED', '14 Aug', Icons.wb_cloudy_outlined, '37°'),
+    _ForecastDay(
+      'TODAY',
+      '15 Aug',
+      Icons.wb_sunny_rounded,
+      '39°',
+      isToday: true,
+    ),
+    _ForecastDay('FRI', '16 Aug', Icons.cloud_outlined, '37°'),
+    _ForecastDay('SAT', '17 Aug', Icons.thunderstorm_outlined, '34°'),
+    _ForecastDay('SUN', '18 Aug', Icons.water_drop_outlined, '33°'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return ScrollConfiguration(
+      behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+      child: SingleChildScrollView(
+        controller: controller,
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        child: Row(
+          children: [for (final day in _forecast) _ForecastItem(day: day)],
+        ),
+      ),
+    );
+  }
+}
+
+class _ForecastItem extends StatelessWidget {
+  const _ForecastItem({required this.day});
+
+  final _ForecastDay day;
+
+  @override
+  Widget build(BuildContext context) {
+    final fx = context.fx;
+    final content = SizedBox(
+      width: day.isToday ? 62 : 50,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            day.day,
+            style: TextStyle(
+              color: day.isToday ? fx.textStrong : fx.textMuted,
+              fontSize: 10.5,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            day.date,
+            style: TextStyle(
+              color: fx.textMuted,
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Icon(day.icon, color: fx.warning, size: 20),
+          const SizedBox(height: 3),
+          Text(
+            day.temperature,
+            style: TextStyle(
+              color: fx.textStrong,
+              fontSize: 13,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (!day.isToday) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 5),
+        child: content,
+      );
+    }
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 5),
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      decoration: BoxDecoration(
+        color: fx.surface,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x10000000),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: content,
+    );
+  }
+}
+
+class _WeatherSummary extends StatelessWidget {
+  const _WeatherSummary({required this.isExpanded, required this.onTap});
+
+  final bool isExpanded;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final fx = context.fx;
+    return Material(
+      color: fx.surface,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.wb_sunny_rounded, color: fx.warning, size: 25),
+              const SizedBox(width: 6),
+              Text(
+                '39°C',
+                style: TextStyle(
+                  color: fx.textStrong,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(width: 1),
+              AnimatedRotation(
+                turns: isExpanded ? 0.5 : 0,
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOutCubic,
+                child: Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: fx.textMuted,
+                  size: 20,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -74,11 +465,17 @@ class _GreetingText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fx = context.fx;
+    final hour = DateTime.now().hour;
+    final greeting = hour < 12
+        ? 'Good Morning'
+        : hour < 17
+        ? 'Good Afternoon'
+        : 'Good Evening';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Greetings, Kisan!',
+          '$greeting, ${_DashboardData.firstName}',
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
             color: fx.textStrong,
             fontWeight: FontWeight.w900,
@@ -98,40 +495,313 @@ class _GreetingText extends StatelessWidget {
   }
 }
 
-class _WeatherPill extends StatelessWidget {
-  const _WeatherPill();
+class _MyCropsSection extends StatefulWidget {
+  const _MyCropsSection({required this.onCropsChanged, this.onOpenCropDetails});
+
+  final VoidCallback onCropsChanged;
+  final ValueChanged<String>? onOpenCropDetails;
+
+  @override
+  State<_MyCropsSection> createState() => _MyCropsSectionState();
+}
+
+class _MyCropsSectionState extends State<_MyCropsSection> {
+  String? _selectedCrop;
+  final Set<String> _localCrops = {..._DashboardData.crops};
+
+  void _showCropManagementModal() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _CropManagementModal(
+        initialCrops: _localCrops,
+        onSaved: (crops) {
+          setState(
+            () => _localCrops
+              ..clear()
+              ..addAll(crops),
+          );
+          widget.onCropsChanged();
+        },
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final fx = context.fx;
+    final crops = _localCrops.isEmpty
+        ? _DashboardData.crops
+        : _localCrops.toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'My Crops',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: fx.textStrong,
+                ),
+              ),
+            ),
+            IconButton(
+              tooltip: 'Manage crops',
+              onPressed: _showCropManagementModal,
+              icon: const Icon(Icons.add_circle_outline, size: 24),
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 72,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: crops.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 8),
+            itemBuilder: (context, index) {
+              final crop = crops[index];
+              return _CropTab(
+                crop: crop,
+                isSelected: _selectedCrop == crop,
+                onTap: () {
+                  setState(() => _selectedCrop = crop);
+                  final openDetails = widget.onOpenCropDetails;
+                  if (openDetails != null) {
+                    openDetails(crop);
+                    return;
+                  }
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => _DashboardDetailScreen(
+                        title: '$crop Details',
+                        icon: Icons.grass_rounded,
+                        message:
+                            'Crop-specific insights, prices, stage tasks, and health risks for $crop.',
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CropTab extends StatelessWidget {
+  const _CropTab({required this.crop, this.isSelected = false, this.onTap});
+
+  final String crop;
+  final bool isSelected;
+  final VoidCallback? onTap;
+
+  String get _cropIcon {
+    switch (crop.toLowerCase()) {
+      case 'wheat':
+        return 'W';
+      case 'rice':
+        return 'R';
+      case 'soybean':
+        return 'S';
+      case 'tomato':
+        return 'T';
+      case 'cotton':
+        return 'C';
+      case 'maize':
+        return 'M';
+      default:
+        return crop.isEmpty ? '?' : crop.characters.first.toUpperCase();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final fx = context.fx;
+    final active = Theme.of(context).colorScheme.primary;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(36),
+      child: Container(
+        width: 72,
+        height: 72,
+        decoration: BoxDecoration(
+          color: isSelected ? fx.selectedFill : fx.surface,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: isSelected ? active : fx.border,
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              _cropIcon,
+              style: TextStyle(
+                color: isSelected ? active : fx.textStrong,
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              crop,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: isSelected ? active : fx.textStrong,
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CropManagementModal extends StatefulWidget {
+  const _CropManagementModal({
+    required this.initialCrops,
+    required this.onSaved,
+  });
+
+  final Set<String> initialCrops;
+  final ValueChanged<Set<String>> onSaved;
+
+  @override
+  State<_CropManagementModal> createState() => _CropManagementModalState();
+}
+
+class _CropManagementModalState extends State<_CropManagementModal> {
+  final _customCropController = TextEditingController();
+  late final Set<String> _selectedCrops = {...widget.initialCrops};
+
+  static const _availableCrops = [
+    'Wheat',
+    'Rice',
+    'Soybean',
+    'Tomato',
+    'Cotton',
+    'Maize',
+    'Sugarcane',
+    'Potato',
+    'Onion',
+    'Mustard',
+    'Bajra',
+    'Groundnut',
+  ];
+
+  @override
+  void dispose() {
+    _customCropController.dispose();
+    super.dispose();
+  }
+
+  void _addCustomCrop() {
+    final crop = _customCropController.text.trim();
+    if (crop.isEmpty) return;
+    setState(() {
+      _selectedCrops.add(crop);
+      _customCropController.clear();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final fx = context.fx;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      height: MediaQuery.of(context).size.height * 0.8,
       decoration: BoxDecoration(
         color: fx.surface,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x12000000),
-            blurRadius: 14,
-            offset: Offset(0, 6),
-          ),
-        ],
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+      child: Column(
         children: [
-          Icon(Icons.wb_sunny_rounded, color: fx.warning, size: 28),
-          const SizedBox(width: 8),
-          Text(
-            '39°C',
-            style: TextStyle(
-              color: fx.textStrong,
-              fontSize: 19,
-              fontWeight: FontWeight.w900,
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Manage Crops',
+                    style: TextStyle(
+                      color: fx.textStrong,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.close_rounded),
+                ),
+              ],
             ),
           ),
-          const SizedBox(width: 2),
-          Icon(Icons.keyboard_arrow_down_rounded, color: fx.textMuted),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+              children: [
+                TextField(
+                  controller: _customCropController,
+                  decoration: const InputDecoration(
+                    hintText: 'Add custom crop',
+                    prefixIcon: Icon(Icons.add_rounded),
+                  ),
+                  onSubmitted: (_) => _addCustomCrop(),
+                ),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final crop in _availableCrops)
+                      FilterChip(
+                        label: Text(crop),
+                        selected: _selectedCrops.contains(crop),
+                        onSelected: (selected) {
+                          setState(() {
+                            if (selected) {
+                              _selectedCrops.add(crop);
+                            } else {
+                              _selectedCrops.remove(crop);
+                            }
+                          });
+                        },
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              20,
+              12,
+              20,
+              20 + MediaQuery.of(context).padding.bottom,
+            ),
+            child: FilledButton(
+              onPressed: () {
+                widget.onSaved(_selectedCrops);
+                Navigator.of(context).pop();
+              },
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(52),
+              ),
+              child: const Text('Save Changes'),
+            ),
+          ),
         ],
       ),
     );
@@ -139,7 +809,10 @@ class _WeatherPill extends StatelessWidget {
 }
 
 class _PestAlertCard extends StatelessWidget {
-  const _PestAlertCard();
+  const _PestAlertCard({required this.alert, required this.onDismiss});
+
+  final _DashboardAlert alert;
+  final VoidCallback onDismiss;
 
   @override
   Widget build(BuildContext context) {
@@ -171,7 +844,7 @@ class _PestAlertCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Pest Alert: Locust Swarm',
+                    alert.title,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: fx.danger,
                       fontWeight: FontWeight.w900,
@@ -179,7 +852,7 @@ class _PestAlertCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 5),
                   Text(
-                    'Nearby fields reported pest movement. Inspect leaves and spray only if damage is visible.',
+                    alert.message,
                     style: TextStyle(
                       color: fx.textStrong,
                       height: 1.35,
@@ -191,7 +864,7 @@ class _PestAlertCard extends StatelessWidget {
             ),
             IconButton(
               tooltip: 'Dismiss',
-              onPressed: () {},
+              onPressed: onDismiss,
               icon: Icon(Icons.close_rounded, color: fx.danger),
             ),
           ],
@@ -201,20 +874,38 @@ class _PestAlertCard extends StatelessWidget {
   }
 }
 
-class _CropTimelineSection extends StatelessWidget {
-  const _CropTimelineSection();
+class _CropTimelineSection extends StatefulWidget {
+  const _CropTimelineSection({super.key, this.onTap});
+
+  final VoidCallback? onTap;
+
+  @override
+  State<_CropTimelineSection> createState() => _CropTimelineSectionState();
+}
+
+class _CropTimelineSectionState extends State<_CropTimelineSection> {
+  late final List<String> _cropOptions;
+  late String _selectedCrop;
 
   static const _stages = [
-    _TimelineData('Sowing', Icons.spa_outlined, false),
-    _TimelineData('Sprout', Icons.eco_outlined, false),
-    _TimelineData('Growth', Icons.grass_rounded, true),
-    _TimelineData('Flowering', Icons.local_florist_outlined, false),
-    _TimelineData('Harvest', Icons.agriculture_outlined, false),
+    _TimelineData('Sowing', Icons.spa_outlined),
+    _TimelineData('Sprout', Icons.eco_outlined),
+    _TimelineData('Growth', Icons.grass_rounded),
+    _TimelineData('Flowering', Icons.local_florist_outlined),
+    _TimelineData('Harvest', Icons.agriculture_outlined),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _cropOptions = _DashboardData.crops;
+    _selectedCrop = _cropOptions.first;
+  }
 
   @override
   Widget build(BuildContext context) {
     final fx = context.fx;
+    final activeStageIndex = _DashboardData.stageIndexFor(_selectedCrop);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -231,26 +922,37 @@ class _CropTimelineSection extends StatelessWidget {
                 color: fx.textStrong,
               ),
             ),
-            const _CropDropdownChip(),
+            _CropDropdownChip(
+              selectedCrop: _selectedCrop,
+              options: _cropOptions,
+              onSelected: (crop) => setState(() => _selectedCrop = crop),
+            ),
           ],
         ),
         const SizedBox(height: 12),
         _TapCard(
           color: fx.surface,
           borderRadius: 20,
+          onTap: widget.onTap,
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
             child: Row(
               children: [
                 for (var i = 0; i < _stages.length; i++) ...[
-                  SizedBox(width: 64, child: _TimelineStep(data: _stages[i])),
+                  SizedBox(
+                    width: 64,
+                    child: _TimelineStep(
+                      data: _stages[i],
+                      isActive: i == activeStageIndex,
+                    ),
+                  ),
                   if (i != _stages.length - 1)
                     Container(
                       width: 28,
                       height: 2,
                       margin: const EdgeInsets.only(bottom: 22),
-                      color: i < 2
+                      color: i < activeStageIndex
                           ? Theme.of(context).colorScheme.primary
                           : fx.border,
                     ),
@@ -265,15 +967,56 @@ class _CropTimelineSection extends StatelessWidget {
 }
 
 class _TimelineData {
-  const _TimelineData(this.label, this.icon, this.isActive);
+  const _TimelineData(this.label, this.icon);
 
   final String label;
   final IconData icon;
-  final bool isActive;
 }
 
 class _CropDropdownChip extends StatelessWidget {
-  const _CropDropdownChip();
+  const _CropDropdownChip({
+    required this.selectedCrop,
+    required this.options,
+    required this.onSelected,
+  });
+
+  final String selectedCrop;
+  final List<String> options;
+  final ValueChanged<String> onSelected;
+
+  Future<void> _showCropMenu(BuildContext context) async {
+    final box = context.findRenderObject() as RenderBox;
+    final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+    final topLeft = box.localToGlobal(Offset.zero, ancestor: overlay);
+    final position = RelativeRect.fromRect(
+      Rect.fromLTWH(
+        topLeft.dx,
+        topLeft.dy + box.size.height + 4,
+        box.size.width,
+        0,
+      ),
+      Offset.zero & overlay.size,
+    );
+
+    final selected = await showMenu<String>(
+      context: context,
+      position: position,
+      constraints: BoxConstraints.tightFor(width: box.size.width),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      items: [
+        for (final crop in options)
+          PopupMenuItem<String>(
+            value: crop,
+            height: 42,
+            child: Text(
+              crop,
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+          ),
+      ],
+    );
+    if (selected != null) onSelected(selected);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -283,7 +1026,7 @@ class _CropDropdownChip extends StatelessWidget {
       borderRadius: BorderRadius.circular(999),
       child: InkWell(
         borderRadius: BorderRadius.circular(999),
-        onTap: () {},
+        onTap: () => _showCropMenu(context),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
           decoration: BoxDecoration(
@@ -294,7 +1037,7 @@ class _CropDropdownChip extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Wheat (Field A)',
+                '$selectedCrop (Field A)',
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
                   color: fx.textStrong,
@@ -315,36 +1058,33 @@ class _CropDropdownChip extends StatelessWidget {
 }
 
 class _TimelineStep extends StatelessWidget {
-  const _TimelineStep({required this.data});
+  const _TimelineStep({required this.data, required this.isActive});
 
   final _TimelineData data;
+  final bool isActive;
 
   @override
   Widget build(BuildContext context) {
-    final color = data.isActive
-        ? const Color(0xFF16823A)
-        : const Color(0xFF8A968A);
+    final color = isActive ? const Color(0xFF16823A) : const Color(0xFF8A968A);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         AnimatedContainer(
           duration: const Duration(milliseconds: 240),
-          width: data.isActive ? 48 : 42,
-          height: data.isActive ? 48 : 42,
+          width: isActive ? 48 : 42,
+          height: isActive ? 48 : 42,
           decoration: BoxDecoration(
-            color: data.isActive
-                ? const Color(0xFFEAF7E8)
-                : const Color(0xFFF4F7F2),
+            color: isActive ? const Color(0xFFEAF7E8) : const Color(0xFFF4F7F2),
             shape: BoxShape.circle,
             border: Border.all(
-              color: data.isActive
+              color: isActive
                   ? const Color(0xFF16823A)
                   : const Color(0xFFE0E8DD),
-              width: data.isActive ? 2 : 1,
+              width: isActive ? 2 : 1,
             ),
           ),
-          child: Icon(data.icon, color: color, size: data.isActive ? 25 : 22),
+          child: Icon(data.icon, color: color, size: isActive ? 25 : 22),
         ),
         const SizedBox(height: 7),
         FittedBox(
@@ -355,7 +1095,7 @@ class _TimelineStep extends StatelessWidget {
             style: TextStyle(
               color: color,
               fontSize: 11.5,
-              fontWeight: data.isActive ? FontWeight.w900 : FontWeight.w700,
+              fontWeight: isActive ? FontWeight.w900 : FontWeight.w700,
             ),
           ),
         ),
@@ -365,7 +1105,9 @@ class _TimelineStep extends StatelessWidget {
 }
 
 class _SensorDataCard extends StatelessWidget {
-  const _SensorDataCard();
+  const _SensorDataCard({this.onTap});
+
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -373,6 +1115,7 @@ class _SensorDataCard extends StatelessWidget {
     return _TapCard(
       color: fx.surface,
       borderRadius: 22,
+      onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.all(18),
         child: Column(
@@ -658,24 +1401,34 @@ class _MetricBar extends StatelessWidget {
 }
 
 class _MandiFinanceSection extends StatelessWidget {
-  const _MandiFinanceSection();
+  const _MandiFinanceSection({
+    this.onOpenMandiPrice,
+    this.onOpenFinanceAnalytics,
+  });
+
+  final VoidCallback? onOpenMandiPrice;
+  final VoidCallback? onOpenFinanceAnalytics;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
         if (constraints.maxWidth < 520) {
-          return const Column(
-            children: [_MandiPriceCard(), SizedBox(height: 14), _FinanceCard()],
+          return Column(
+            children: [
+              _MandiPriceCard(onTap: onOpenMandiPrice),
+              const SizedBox(height: 14),
+              _FinanceCard(onTap: onOpenFinanceAnalytics),
+            ],
           );
         }
 
-        return const Row(
+        return Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(child: _MandiPriceCard()),
-            SizedBox(width: 14),
-            Expanded(child: _FinanceCard()),
+            Expanded(child: _MandiPriceCard(onTap: onOpenMandiPrice)),
+            const SizedBox(width: 14),
+            Expanded(child: _FinanceCard(onTap: onOpenFinanceAnalytics)),
           ],
         );
       },
@@ -684,7 +1437,9 @@ class _MandiFinanceSection extends StatelessWidget {
 }
 
 class _MandiPriceCard extends StatelessWidget {
-  const _MandiPriceCard();
+  const _MandiPriceCard({this.onTap});
+
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -692,6 +1447,7 @@ class _MandiPriceCard extends StatelessWidget {
     return _TapCard(
       color: fx.warningContainer,
       borderRadius: 20,
+      onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.all(18),
         child: Column(
@@ -752,13 +1508,16 @@ class _PriceRow extends StatelessWidget {
 }
 
 class _FinanceCard extends StatelessWidget {
-  const _FinanceCard();
+  const _FinanceCard({this.onTap});
+
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return _TapCard(
       color: Colors.transparent,
       borderRadius: 20,
+      onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
@@ -843,12 +1602,14 @@ class _TapCard extends StatelessWidget {
     required this.color,
     required this.borderRadius,
     this.borderColor,
+    this.onTap,
   });
 
   final Widget child;
   final Color color;
   final double borderRadius;
   final Color? borderColor;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -864,7 +1625,7 @@ class _TapCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(borderRadius),
       child: InkWell(
         borderRadius: BorderRadius.circular(borderRadius),
-        onTap: () {},
+        onTap: onTap,
         child: Ink(
           decoration: BoxDecoration(
             color: effectiveColor,
@@ -909,6 +1670,70 @@ class _AnimatedDashboardCard extends StatelessWidget {
         );
       },
       child: child,
+    );
+  }
+}
+
+class _DashboardDetailScreen extends StatelessWidget {
+  const _DashboardDetailScreen({
+    required this.title,
+    required this.icon,
+    required this.message,
+  });
+
+  final String title;
+  final IconData icon;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final fx = context.fx;
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: AppBar(
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        surfaceTintColor: Colors.transparent,
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircleAvatar(
+                radius: 38,
+                backgroundColor: fx.selectedFill,
+                child: Icon(
+                  icon,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 38,
+                ),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: fx.textStrong,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: fx.textMuted,
+                  height: 1.4,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

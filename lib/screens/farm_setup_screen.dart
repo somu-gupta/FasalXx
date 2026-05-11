@@ -10,7 +10,9 @@ import 'auth_flow_screens.dart';
 import 'main_screen.dart';
 
 class FarmSetupScreen extends StatefulWidget {
-  const FarmSetupScreen({super.key});
+  const FarmSetupScreen({super.key, this.returnToPreviousScreen = false});
+
+  final bool returnToPreviousScreen;
 
   @override
   State<FarmSetupScreen> createState() => _FarmSetupScreenState();
@@ -79,7 +81,7 @@ class _FarmSetupScreenState extends State<FarmSetupScreen> {
                 children: [
                   IconButton.filledTonal(
                     tooltip: 'Back',
-                    onPressed: _goToLogin,
+                    onPressed: _handleBack,
                     icon: const Icon(Icons.arrow_back_rounded),
                   ),
                   const SizedBox(height: 12),
@@ -406,7 +408,7 @@ class _FarmSetupScreenState extends State<FarmSetupScreen> {
       ),
     );
     if (!mounted) return;
-    _goToDashboard();
+    _finishSetup();
   }
 
   Future<void> _skip() async {
@@ -415,6 +417,25 @@ class _FarmSetupScreenState extends State<FarmSetupScreen> {
       const FarmProfile.empty().copyWith(isSetupComplete: true),
     );
     if (!mounted) return;
+    _finishSetup();
+  }
+
+  void _handleBack() {
+    final canReturn = Navigator.of(context).canPop();
+    if ((widget.returnToPreviousScreen ||
+            AuthController.instance.currentUser != null) &&
+        canReturn) {
+      Navigator.of(context).pop();
+      return;
+    }
+    _goToLogin();
+  }
+
+  void _finishSetup() {
+    if (widget.returnToPreviousScreen) {
+      Navigator.of(context).pop();
+      return;
+    }
     _goToDashboard();
   }
 

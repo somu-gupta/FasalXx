@@ -69,13 +69,11 @@ class _FloatingAiChatbotState extends State<FloatingAiChatbot>
   }
 
   void _openChat(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: const Color(0x59000000),
-      builder: (context) => const _ChatSheet(),
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        fullscreenDialog: true,
+        builder: (_) => const _ChatSheet(),
+      ),
     );
   }
 }
@@ -296,67 +294,41 @@ class _ChatSheetState extends State<_ChatSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.sizeOf(context);
     final keyboard = MediaQuery.viewInsetsOf(context).bottom;
-    final isWide = size.width > 700;
-    final sheetHeight = size.height * (isWide ? 0.78 : 0.86);
     final fx = context.fx;
 
-    return AnimatedPadding(
-      duration: const Duration(milliseconds: 220),
-      curve: Curves.easeOutCubic,
-      padding: EdgeInsets.only(bottom: keyboard),
-      child: Align(
-        alignment: Alignment.bottomCenter,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: isWide ? 620 : double.infinity,
-            maxHeight: sheetHeight,
-          ),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: fx.surfaceAlt,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(28),
-              ),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x33000000),
-                  blurRadius: 30,
-                  offset: Offset(0, -12),
+    return Scaffold(
+      resizeToAvoidBottomInset: false,
+      backgroundColor: fx.surfaceAlt,
+      body: SafeArea(
+        child: AnimatedPadding(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          padding: EdgeInsets.only(bottom: keyboard),
+          child: Column(
+            children: [
+              const _ChatHeader(),
+              Expanded(
+                child: ListView.separated(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.fromLTRB(18, 16, 18, 20),
+                  itemCount: _messages.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 10),
+                  itemBuilder: (context, index) {
+                    return _MessageBubble(message: _messages[index]);
+                  },
                 ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(28),
               ),
-              child: Column(
-                children: [
-                  const _ChatHeader(),
-                  Expanded(
-                    child: ListView.separated(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.fromLTRB(18, 16, 18, 20),
-                      itemCount: _messages.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 10),
-                      itemBuilder: (context, index) {
-                        return _MessageBubble(message: _messages[index]);
-                      },
-                    ),
-                  ),
-                  _Composer(
-                    controller: _controller,
-                    image: _pendingImage,
-                    isVoiceListening: _isVoiceListening,
-                    onSend: _sendMessage,
-                    onImage: _pickImage,
-                    onRemoveImage: () => setState(() => _pendingImage = null),
-                    onMic: _handleMic,
-                  ),
-                ],
+              _Composer(
+                controller: _controller,
+                image: _pendingImage,
+                isVoiceListening: _isVoiceListening,
+                onSend: _sendMessage,
+                onImage: _pickImage,
+                onRemoveImage: () => setState(() => _pendingImage = null),
+                onMic: _handleMic,
               ),
-            ),
+            ],
           ),
         ),
       ),
