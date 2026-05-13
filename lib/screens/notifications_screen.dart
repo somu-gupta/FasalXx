@@ -116,6 +116,21 @@ class DemoNotificationCenter extends ChangeNotifier {
     );
   }
 
+  void addMandiPriceAlert({
+    required String crop,
+    required String mandi,
+    required String price,
+    required bool enabled,
+  }) {
+    _add(
+      NotificationType.market,
+      enabled ? '$crop price alert enabled' : '$crop price alert disabled',
+      enabled
+          ? 'You will be notified from $mandi when $crop moves above $price.'
+          : 'Mandi notifications for $crop from $mandi have been turned off.',
+    );
+  }
+
   void markAllAsRead() {
     for (var i = 0; i < _notifications.length; i++) {
       _notifications[i] = _notifications[i].copyWith(isRead: true);

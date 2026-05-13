@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../services/auth_controller.dart';
 import '../theme/app_theme.dart';
 import '../widgets/fasalx_header.dart';
+import 'crop_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
@@ -88,10 +89,15 @@ class _HomeScreenState extends State<HomeScreen> {
             child: _SensorDataCard(
               onTap:
                   widget.onOpenIot ??
-                  () => _openDashboardDetail(
-                    'IoT Monitoring',
-                    Icons.sensors_rounded,
-                    'Live soil moisture, NPK, humidity, and field sensor readings.',
+                  () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const _DashboardDetailScreen(
+                        title: 'IoT Monitoring',
+                        icon: Icons.sensors_rounded,
+                        message:
+                            'Live soil moisture, NPK, humidity, and field sensor readings.',
+                      ),
+                    ),
                   ),
             ),
           ),
@@ -577,12 +583,7 @@ class _MyCropsSectionState extends State<_MyCropsSection> {
                   }
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => _DashboardDetailScreen(
-                        title: '$crop Details',
-                        icon: Icons.grass_rounded,
-                        message:
-                            'Crop-specific insights, prices, stage tasks, and health risks for $crop.',
-                      ),
+                      builder: (_) => CropScreen(initialCrop: crop),
                     ),
                   );
                 },
@@ -1462,7 +1463,7 @@ class _MandiPriceCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Bhopal Mandi',
+                  'Mandi Prices',
                   style: TextStyle(
                     color: fx.textStrong,
                     fontSize: 17,

@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../core/network/api_failure.dart';
+import '../services/backend_repositories.dart';
 import '../services/image_input_service.dart';
 import '../theme/app_theme.dart';
 
@@ -199,8 +201,11 @@ class _ChatSheet extends StatefulWidget {
 class _ChatSheetState extends State<_ChatSheet> {
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
+  final _chatbotRepository = const ChatbotRepository();
+  final _diseaseRepository = const DiseaseRepository();
   SelectedImage? _pendingImage;
   bool _isVoiceListening = false;
+  bool _isSending = false;
   final List<_ChatMessage> _messages = [
     const _ChatMessage(
       text:
@@ -220,26 +225,57 @@ class _ChatSheetState extends State<_ChatSheet> {
     super.dispose();
   }
 
-  void _sendMessage() {
+  Future<void> _sendMessage() async {
     final text = _controller.text.trim();
     final image = _pendingImage;
-    if (text.isEmpty && image == null) {
+    if ((text.isEmpty && image == null) || _isSending) {
       return;
     }
 
     setState(() {
       _messages.add(_ChatMessage(text: text, image: image, isUser: true));
-      _messages.add(
-        const _ChatMessage(
-          text:
-              'Photo/detail mil gayi. Kripya crop name, location, aur symptoms bhi bhejein. Main simple next steps bataunga.',
-          isUser: false,
-        ),
-      );
       _pendingImage = null;
+      _isSending = true;
     });
     _controller.clear();
     _scrollToBottom();
+
+    try {
+      final reply = image == null
+          ? (await _chatbotRepository.sendMessage(text)).reply
+          : _diseaseReply(
+              await _diseaseRepository.predict(
+                cropName: _cropNameFrom(text),
+                issueText: text.isEmpty ? null : text,
+                imageBytes: image.bytes,
+                imageName: image.name,
+              ),
+            );
+      if (!mounted) return;
+      setState(() => _messages.add(_ChatMessage(text: reply, isUser: false)));
+    } on ApiFailure catch (error) {
+      if (!mounted) return;
+      setState(
+        () => _messages.add(
+          _ChatMessage(text: 'Service error: ${error.message}', isUser: false),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(
+        () => _messages.add(
+          const _ChatMessage(
+            text: 'FasalX AI service is not reachable right now.',
+            isUser: false,
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSending = false);
+        _scrollToBottom();
+      }
+    }
   }
 
   Future<void> _pickImage() async {
@@ -323,7 +359,8 @@ class _ChatSheetState extends State<_ChatSheet> {
                 controller: _controller,
                 image: _pendingImage,
                 isVoiceListening: _isVoiceListening,
-                onSend: _sendMessage,
+                isSending: _isSending,
+                onSend: () => _sendMessage(),
                 onImage: _pickImage,
                 onRemoveImage: () => setState(() => _pendingImage = null),
                 onMic: _handleMic,
@@ -333,6 +370,21 @@ class _ChatSheetState extends State<_ChatSheet> {
         ),
       ),
     );
+  }
+
+  String _cropNameFrom(String text) {
+    final lower = text.toLowerCase();
+    for (final crop in ['tomato', 'wheat', 'rice', 'maize', 'chilli', 'cotton']) {
+      if (lower.contains(crop)) return crop;
+    }
+    return 'unknown';
+  }
+
+  String _diseaseReply(DiseasePrediction prediction) {
+    final confidence = prediction.confidence <= 0
+        ? ''
+        : ' (${prediction.confidence.toStringAsFixed(1)}% confidence)';
+    return 'Disease check: ${prediction.disease}$confidence. Source: ${prediction.source}. Please follow local agronomist guidance before spraying.';
   }
 }
 
@@ -494,6 +546,7 @@ class _Composer extends StatelessWidget {
     required this.controller,
     required this.image,
     required this.isVoiceListening,
+    required this.isSending,
     required this.onSend,
     required this.onImage,
     required this.onRemoveImage,
@@ -503,6 +556,7 @@ class _Composer extends StatelessWidget {
   final TextEditingController controller;
   final SelectedImage? image;
   final bool isVoiceListening;
+  final bool isSending;
   final VoidCallback onSend;
   final VoidCallback onImage;
   final VoidCallback onRemoveImage;
@@ -573,12 +627,21 @@ class _Composer extends StatelessWidget {
                 height: 52,
                 child: IconButton.filled(
                   tooltip: 'Send',
-                  onPressed: onSend,
+                  onPressed: isSending ? null : onSend,
                   style: IconButton.styleFrom(
                     backgroundColor: Theme.of(context).colorScheme.primary,
                     foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   ),
-                  icon: const Icon(Icons.send_rounded),
+                  icon: isSending
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.send_rounded),
                 ),
               ),
             ],

@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 
+import '../core/network/api_failure.dart';
+import '../services/backend_repositories.dart';
 import '../services/image_input_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/fasalx_header.dart';
@@ -1215,7 +1218,14 @@ class _ScanScreenState extends State<ScanScreen> {
     }
 
     setState(() => _isScanning = true);
-    final report = await MockHealthApi.scanCrop();
+    final image = _selectedImage;
+    final report = image == null
+        ? await MockHealthApi.scanCrop()
+        : await MockHealthApi.scanCrop(
+            cropName: _cropNameFrom(image.name),
+            imageBytes: image.bytes,
+            imageName: image.name,
+          );
     if (!mounted) return;
     setState(() => _isScanning = false);
     Navigator.of(context).pushReplacement(
@@ -1272,6 +1282,14 @@ class _ScanScreenState extends State<ScanScreen> {
     if (_cameraController == null && widget.source == ScanSource.camera) {
       _cameraFuture = _initCamera();
     }
+  }
+
+  String _cropNameFrom(String imageName) {
+    final lower = imageName.toLowerCase();
+    for (final crop in ['tomato', 'wheat', 'rice', 'maize', 'chilli', 'cotton']) {
+      if (lower.contains(crop)) return crop;
+    }
+    return 'unknown';
   }
 }
 
@@ -2490,11 +2508,44 @@ class MockHealthApi extends ChangeNotifier {
   static List<ScanReport> get scanHistory =>
       List.unmodifiable(instance._scanHistory);
 
-  static Future<ScanReport> scanCrop() async {
-    return instance._scanCrop();
+  static Future<ScanReport> scanCrop({
+    String cropName = 'unknown',
+    Uint8List? imageBytes,
+    String? imageName,
+  }) async {
+    return instance._scanCrop(
+      cropName: cropName,
+      imageBytes: imageBytes,
+      imageName: imageName,
+    );
   }
 
-  Future<ScanReport> _scanCrop() async {
+  Future<ScanReport> _scanCrop({
+    required String cropName,
+    Uint8List? imageBytes,
+    String? imageName,
+  }) async {
+    if (imageBytes != null) {
+      try {
+        final prediction = await const DiseaseRepository().predict(
+          cropName: cropName,
+          imageBytes: imageBytes,
+          imageName: imageName,
+        );
+        final report = ScanReport.fromPrediction(
+          prediction,
+          crop: cropName == 'unknown' ? 'Crop' : cropName,
+        );
+        _scanHistory.insert(0, report);
+        notifyListeners();
+        return report;
+      } on ApiFailure {
+        // Keep the scan flow usable if the backend is temporarily unavailable.
+      } catch (_) {
+        // Fall through to the bundled demo reports.
+      }
+    }
+
     await Future<void>.delayed(const Duration(seconds: 2));
     final templates = [
       ScanReport.tomato(),
@@ -2991,6 +3042,57 @@ class ScanReport {
     scannedAt: DateTime(2026, 5, 7, 16, 20),
     dateLabel: '2 days ago',
   );
+
+  factory ScanReport.fromPrediction(
+    DiseasePrediction prediction, {
+    required String crop,
+  }) {
+    final confidence = prediction.confidence.round().clamp(0, 100);
+    final risk = confidence >= 80
+        ? RiskLevel.high
+        : confidence >= 55
+        ? RiskLevel.medium
+        : RiskLevel.low;
+    return ScanReport(
+      scanId: 'scan-${DateTime.now().millisecondsSinceEpoch}',
+      crop: crop,
+      disease: prediction.disease,
+      confidence: confidence,
+      risk: risk,
+      description: 'Backend disease analysis from ${prediction.source}.',
+      symptoms:
+          prediction.raw['detail']?.toString() ??
+          'Review visible symptoms and field conditions before treatment.',
+      causes:
+          prediction.raw['cause']?.toString() ??
+          'Cause depends on crop stage, weather, and field history.',
+      treatment:
+          prediction.raw['treatment']?.toString() ??
+          'Remove heavily affected leaves and consult local guidance before spraying.',
+      preventiveMeasures:
+          prediction.raw['preventive_measures']?.toString() ??
+          'Improve airflow, avoid overhead irrigation, and monitor the crop regularly.',
+      localizedTreatment:
+          prediction.raw['localized_treatment']?.toString() ??
+          'Krishi expert se salah lekar hi spray karein.',
+      weatherCorrelation:
+          prediction.raw['weather_correlation']?.toString() ??
+          'Humidity and recent rainfall can increase disease pressure.',
+      organicTreatment:
+          prediction.raw['organic_treatment']?.toString() ??
+          'Remove infected material and use approved organic controls where suitable.',
+      chemicalTreatment:
+          prediction.raw['chemical_treatment']?.toString() ??
+          'Use crop-specific chemical treatment only after expert confirmation.',
+      professionalTips: const [
+        'Take another clear photo after 3-4 days to compare spread.',
+        'Record irrigation and fertilizer history with the scan.',
+        'Avoid blanket spraying until the disease is confirmed locally.',
+      ],
+      scannedAt: DateTime.now(),
+      dateLabel: 'Today',
+    );
+  }
 
   final String scanId;
   final String crop;

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/delivery_address.dart';
 import '../services/address_controller.dart';
 import '../services/auth_controller.dart';
+import '../services/backend_repositories.dart';
 import '../theme/app_theme.dart';
 import 'address_selection_screen.dart';
 import 'auth_flow_screens.dart';
@@ -24,6 +25,7 @@ class _FarmSetupScreenState extends State<FarmSetupScreen> {
   final _location = TextEditingController();
   final Set<String> _selectedCrops = {};
   final List<_CropOption> _customCrops = [];
+  AddressDraft? _locationDraft;
   String _unit = 'Acre';
   bool _saving = false;
   bool _locating = false;
@@ -285,7 +287,10 @@ class _FarmSetupScreenState extends State<FarmSetupScreen> {
           .read<AddressController>()
           .detectCurrentLocation();
       if (!mounted) return;
-      setState(() => _location.text = _formatAddressDraft(draft));
+      setState(() {
+        _locationDraft = draft;
+        _location.text = _formatAddressDraft(draft);
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Current location added for this farm.')),
       );
@@ -304,7 +309,10 @@ class _FarmSetupScreenState extends State<FarmSetupScreen> {
       MaterialPageRoute(builder: (_) => const MapLocationPickerScreen()),
     );
     if (draft == null || !mounted) return;
-    setState(() => _location.text = _formatAddressDraft(draft));
+    setState(() {
+      _locationDraft = draft;
+      _location.text = _formatAddressDraft(draft);
+    });
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Map location saved for this farm.')),
     );
@@ -368,9 +376,14 @@ class _FarmSetupScreenState extends State<FarmSetupScreen> {
       draft.state,
       draft.pincode,
     ].where((part) => part.trim().isNotEmpty).join(', ');
-    if (address.isNotEmpty) return address;
     final lat = draft.latitude;
     final lng = draft.longitude;
+    if (address.isNotEmpty) {
+      if (lat != null && lng != null) {
+        return '$address (Lat ${lat.toStringAsFixed(5)}, Lng ${lng.toStringAsFixed(5)})';
+      }
+      return address;
+    }
     if (lat != null && lng != null) {
       return 'Lat ${lat.toStringAsFixed(5)}, Lng ${lng.toStringAsFixed(5)}';
     }
@@ -407,8 +420,34 @@ class _FarmSetupScreenState extends State<FarmSetupScreen> {
         isSetupComplete: true,
       ),
     );
+    await _registerFieldIfPossible(sortedCrops);
     if (!mounted) return;
     _finishSetup();
+  }
+
+  Future<void> _registerFieldIfPossible(List<String> sortedCrops) async {
+    final draft = _locationDraft;
+    final lat = draft?.latitude;
+    final lon = draft?.longitude;
+    final area = double.tryParse(_farmSize.text.trim());
+    if (lat == null || lon == null || area == null || area <= 0) {
+      return;
+    }
+
+    try {
+      await const FieldRepository().createField(
+        name: _farmName.text.trim().isEmpty
+            ? (sortedCrops.isEmpty
+                  ? 'My First Farm'
+                  : '${sortedCrops.first} Field')
+            : _farmName.text.trim(),
+        lat: lat,
+        lon: lon,
+        area: area,
+      );
+    } catch (_) {
+      // Farm setup should not be blocked if field registration is unavailable.
+    }
   }
 
   Future<void> _skip() async {

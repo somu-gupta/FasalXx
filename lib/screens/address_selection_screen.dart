@@ -944,8 +944,9 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
           draft.state,
           draft.pincode,
         ].where((part) => part.trim().isNotEmpty).join(', ');
-        if (_preview.isEmpty)
+        if (_preview.isEmpty) {
           _preview = 'Address found from selected coordinates';
+        }
       });
     } catch (_) {
       if (!mounted) return;

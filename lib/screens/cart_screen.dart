@@ -549,6 +549,7 @@ class OrderHistoryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final history = DemoOrderHistoryStore.instance;
+    final fx = context.fx;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -569,11 +570,11 @@ class OrderHistoryScreen extends StatelessWidget {
                     icon: const Icon(Icons.arrow_back_rounded),
                   ),
                   const SizedBox(width: 10),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Order History',
                       style: TextStyle(
-                        color: _darkText,
+                        color: fx.textStrong,
                         fontSize: 25,
                         fontWeight: FontWeight.w900,
                       ),
@@ -606,20 +607,22 @@ class _OrderHistoryHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fx = context.fx;
+    final scheme = Theme.of(context).colorScheme;
     return _SoftCard(
-      color: const Color(0xFFEFFAF4),
+      color: fx.selectedFill,
       child: Row(
         children: [
           Container(
             width: 58,
             height: 58,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: fx.surface,
               borderRadius: BorderRadius.circular(18),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.history_rounded,
-              color: _mainGreen,
+              color: scheme.primary,
               size: 31,
             ),
           ),
@@ -628,10 +631,10 @@ class _OrderHistoryHero extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Your farm purchases',
                   style: TextStyle(
-                    color: _darkText,
+                    color: fx.textStrong,
                     fontSize: 20,
                     fontWeight: FontWeight.w900,
                   ),
@@ -641,8 +644,8 @@ class _OrderHistoryHero extends StatelessWidget {
                   totalOrders == 1
                       ? '1 order ready for tracking and reorder.'
                       : '$totalOrders orders ready for tracking and reorder.',
-                  style: const TextStyle(
-                    color: _secondaryText,
+                  style: TextStyle(
+                    color: fx.textMuted,
                     fontWeight: FontWeight.w700,
                     height: 1.35,
                   ),
@@ -661,37 +664,39 @@ class _EmptyOrderHistory extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fx = context.fx;
+    final scheme = Theme.of(context).colorScheme;
     return _SoftCard(
       child: Column(
         children: [
           Container(
             width: 74,
             height: 74,
-            decoration: const BoxDecoration(
-              color: _lightGreen,
+            decoration: BoxDecoration(
+              color: fx.selectedFill,
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.receipt_long_outlined,
-              color: _mainGreen,
+              color: scheme.primary,
               size: 38,
             ),
           ),
           const SizedBox(height: 14),
-          const Text(
+          Text(
             'No orders yet',
             style: TextStyle(
-              color: _darkText,
+              color: fx.textStrong,
               fontSize: 20,
               fontWeight: FontWeight.w900,
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
+          Text(
             'Your completed store orders will appear here with tracking details.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: _secondaryText,
+              color: fx.textMuted,
               fontWeight: FontWeight.w700,
               height: 1.35,
             ),
@@ -702,8 +707,8 @@ class _EmptyOrderHistory extends StatelessWidget {
             icon: const Icon(Icons.storefront_outlined),
             label: const Text('Start Shopping'),
             style: FilledButton.styleFrom(
-              backgroundColor: _mainGreen,
-              foregroundColor: Colors.white,
+              backgroundColor: scheme.primary,
+              foregroundColor: scheme.onPrimary,
               minimumSize: const Size.fromHeight(50),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -724,6 +729,8 @@ class _OrderHistoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final preview = order.itemPreview;
+    final fx = context.fx;
+    final scheme = Theme.of(context).colorScheme;
 
     return _SoftCard(
       child: Column(
@@ -748,8 +755,8 @@ class _OrderHistoryCard extends StatelessWidget {
                   children: [
                     Text(
                       order.orderId,
-                      style: const TextStyle(
-                        color: _darkText,
+                      style: TextStyle(
+                        color: fx.textStrong,
                         fontSize: 17,
                         fontWeight: FontWeight.w900,
                       ),
@@ -757,8 +764,8 @@ class _OrderHistoryCard extends StatelessWidget {
                     const SizedBox(height: 3),
                     Text(
                       '${order.statusLabel} - ${order.dateLabel}',
-                      style: const TextStyle(
-                        color: _secondaryText,
+                      style: TextStyle(
+                        color: fx.textMuted,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -773,8 +780,8 @@ class _OrderHistoryCard extends StatelessWidget {
             preview,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: _darkText,
+            style: TextStyle(
+              color: fx.textStrong,
               fontWeight: FontWeight.w800,
               height: 1.3,
             ),
@@ -785,8 +792,8 @@ class _OrderHistoryCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   '${_money(order.amount)} - ${order.paymentMethod}',
-                  style: const TextStyle(
-                    color: _mainGreen,
+                  style: TextStyle(
+                    color: scheme.primary,
                     fontSize: 16,
                     fontWeight: FontWeight.w900,
                   ),
@@ -794,8 +801,8 @@ class _OrderHistoryCard extends StatelessWidget {
               ),
               Text(
                 '${order.totalItems} items',
-                style: const TextStyle(
-                  color: _secondaryText,
+                style: TextStyle(
+                  color: fx.textMuted,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -814,8 +821,8 @@ class _OrderHistoryCard extends StatelessWidget {
                   icon: const Icon(Icons.shopping_cart_checkout_rounded),
                   label: const Text('Reorder'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: _mainGreen,
-                    side: const BorderSide(color: _mainGreen),
+                    foregroundColor: scheme.primary,
+                    side: BorderSide(color: scheme.primary),
                     minimumSize: const Size.fromHeight(46),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(15),
@@ -832,10 +839,10 @@ class _OrderHistoryCard extends StatelessWidget {
                   icon: const Icon(Icons.local_shipping_outlined),
                   label: const Text('Track'),
                   style: FilledButton.styleFrom(
-                    backgroundColor: _mainGreen,
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor: const Color(0xFFE5E7EB),
-                    disabledForegroundColor: _secondaryText,
+                    backgroundColor: scheme.primary,
+                    foregroundColor: scheme.onPrimary,
+                    disabledBackgroundColor: fx.fieldFill,
+                    disabledForegroundColor: fx.textMuted,
                     minimumSize: const Size.fromHeight(46),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(15),
@@ -861,16 +868,14 @@ class _OrderHistoryCard extends StatelessWidget {
                 order.isCancelled ? 'Order Cancelled' : 'Cancel Order',
               ),
               style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFFDC2626),
-                disabledForegroundColor: _secondaryText,
+                foregroundColor: fx.danger,
+                disabledForegroundColor: fx.textMuted,
                 side: BorderSide(
-                  color: order.isCancelled
-                      ? const Color(0xFFE5E7EB)
-                      : const Color(0xFFFCA5A5),
+                  color: order.isCancelled ? fx.border : fx.danger,
                 ),
                 backgroundColor: order.isCancelled
-                    ? const Color(0xFFF9FAFB)
-                    : const Color(0xFFFFF7F7),
+                    ? fx.fieldFill
+                    : fx.dangerContainer,
                 minimumSize: const Size.fromHeight(46),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(15),
@@ -948,23 +953,24 @@ class _CancelledOrderNotice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fx = context.fx;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF7F7),
+        color: fx.dangerContainer,
         borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: const Color(0xFFFECACA)),
+        border: Border.all(color: fx.danger.withAlpha(100)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.info_outline_rounded, color: Color(0xFFDC2626)),
+          Icon(Icons.info_outline_rounded, color: fx.danger),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               'Cancelled${order.cancelReason == null ? '' : ': ${order.cancelReason}'}',
-              style: const TextStyle(
-                color: Color(0xFF7F1D1D),
+              style: TextStyle(
+                color: fx.textStrong,
                 fontWeight: FontWeight.w800,
                 height: 1.3,
               ),
@@ -1735,20 +1741,26 @@ class _CartTopBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.of(context).padding.top;
     final cart = CartScope.watch(context);
+    final fx = context.fx;
+    final scheme = Theme.of(context).colorScheme;
 
     return Material(
       color: Colors.transparent,
       child: Container(
         height: preferredSize.height + topPadding,
         padding: EdgeInsets.fromLTRB(18, topPadding + 10, 18, 12),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(bottom: Radius.circular(22)),
+        decoration: BoxDecoration(
+          color: fx.surface,
+          borderRadius: const BorderRadius.vertical(
+            bottom: Radius.circular(22),
+          ),
           boxShadow: [
             BoxShadow(
-              color: Color(0x12000000),
+              color: Colors.black.withAlpha(
+                Theme.of(context).brightness == Brightness.dark ? 80 : 18,
+              ),
               blurRadius: 20,
-              offset: Offset(0, 8),
+              offset: const Offset(0, 8),
             ),
           ],
         ),
@@ -1758,18 +1770,18 @@ class _CartTopBar extends StatelessWidget implements PreferredSizeWidget {
               width: 46,
               height: 46,
               decoration: BoxDecoration(
-                color: _lightGreen,
+                color: fx.selectedFill,
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: const Icon(Icons.eco_rounded, color: _mainGreen, size: 28),
+              child: Icon(Icons.eco_rounded, color: scheme.primary, size: 28),
             ),
             const SizedBox(width: 10),
-            const Expanded(
+            Expanded(
               child: Text(
                 'FasalX',
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: _darkText,
+                  color: fx.textStrong,
                   fontSize: 24,
                   fontWeight: FontWeight.w900,
                 ),
@@ -1839,10 +1851,11 @@ class _TopIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fx = context.fx;
     return Tooltip(
       message: tooltip,
       child: Material(
-        color: const Color(0xFFF1F6EF),
+        color: fx.fieldFill,
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
@@ -1854,7 +1867,7 @@ class _TopIconButton extends StatelessWidget {
               alignment: Alignment.center,
               clipBehavior: Clip.none,
               children: [
-                Icon(icon, color: _darkText, size: 26),
+                Icon(icon, color: fx.textStrong, size: 26),
                 if (badge > 0)
                   Positioned(
                     top: 7,
@@ -1865,9 +1878,9 @@ class _TopIconButton extends StatelessWidget {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE53935),
+                        color: fx.danger,
                         borderRadius: BorderRadius.circular(999),
-                        border: Border.all(color: Colors.white, width: 1.4),
+                        border: Border.all(color: fx.surface, width: 1.4),
                       ),
                       child: Text(
                         '$badge',

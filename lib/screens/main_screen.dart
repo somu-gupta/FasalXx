@@ -5,6 +5,9 @@ import 'health_screen.dart';
 import 'profile_screen.dart';
 import 'schemes_screen.dart';
 import 'store_screen.dart';
+import 'ai_market_advice_screen.dart';
+import 'iot_monitoring_screen.dart';
+import 'mandi_price_screen.dart';
 import '../widgets/floating_ai_chatbot.dart';
 import '../theme/app_theme.dart';
 
@@ -17,17 +20,89 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
+  bool _showingIotMonitoring = false;
+  bool _showingMandiPrices = false;
+  bool _showingAiMarketAdvice = false;
 
-  static const _screens = [
-    HomeScreen(),
-    StoreScreen(),
-    HealthScreen(),
-    SchemesScreen(),
-    ProfileScreen(),
-  ];
+  void _openIotMonitoring() {
+    setState(() {
+      _selectedIndex = 0;
+      _showingIotMonitoring = true;
+      _showingMandiPrices = false;
+      _showingAiMarketAdvice = false;
+    });
+  }
+
+  void _closeIotMonitoring() {
+    setState(() => _showingIotMonitoring = false);
+  }
+
+  void _openMandiPrices() {
+    setState(() {
+      _selectedIndex = 0;
+      _showingIotMonitoring = false;
+      _showingMandiPrices = true;
+      _showingAiMarketAdvice = false;
+    });
+  }
+
+  void _closeMandiPrices() {
+    setState(() => _showingMandiPrices = false);
+  }
+
+  void _openAiMarketAdvice() {
+    setState(() {
+      _selectedIndex = 0;
+      _showingIotMonitoring = false;
+      _showingMandiPrices = true;
+      _showingAiMarketAdvice = true;
+    });
+  }
+
+  void _closeAiMarketAdvice() {
+    setState(() => _showingAiMarketAdvice = false);
+  }
+
+  void _openCropDoctor() {
+    setState(() {
+      _showingIotMonitoring = false;
+      _showingMandiPrices = false;
+      _showingAiMarketAdvice = false;
+      _selectedIndex = 2;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    final screens = [
+      HomeScreen(
+        onOpenIot: _openIotMonitoring,
+        onOpenMandiPrice: _openMandiPrices,
+      ),
+      const StoreScreen(),
+      const HealthScreen(),
+      const SchemesScreen(),
+      const ProfileScreen(),
+    ];
+    final bottomPadding = MediaQuery.paddingOf(context).bottom;
+    final bottomNavigationInset = 82 + bottomPadding;
+    final currentScreen = _showingAiMarketAdvice
+        ? AiMarketAdviceScreen(
+            onBack: _closeAiMarketAdvice,
+            bottomNavigationInset: bottomNavigationInset,
+          )
+        : _showingIotMonitoring
+        ? IotMonitoringScreen(
+            onBack: _closeIotMonitoring,
+            onOpenCropDoctor: _openCropDoctor,
+          )
+        : _showingMandiPrices
+        ? MandiPriceScreen(
+            onBack: _closeMandiPrices,
+            onOpenAiAdvice: _openAiMarketAdvice,
+          )
+        : screens[_selectedIndex];
+
     return Scaffold(
       extendBody: true,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -38,17 +113,34 @@ class _MainScreenState extends State<MainScreen> {
             switchInCurve: Curves.easeOutCubic,
             switchOutCurve: Curves.easeInCubic,
             child: KeyedSubtree(
-              key: ValueKey(_selectedIndex),
-              child: _screens[_selectedIndex],
+              key: ValueKey(
+                _showingAiMarketAdvice
+                    ? 'ai-market'
+                    : _showingIotMonitoring
+                    ? 'iot'
+                    : _showingMandiPrices
+                    ? 'mandi'
+                    : _selectedIndex,
+              ),
+              child: currentScreen,
             ),
           ),
-          if (_selectedIndex == 0) const FloatingAiChatbot(),
+          if (_selectedIndex == 0 &&
+              !_showingIotMonitoring &&
+              !_showingMandiPrices &&
+              !_showingAiMarketAdvice)
+            const FloatingAiChatbot(),
         ],
       ),
       bottomNavigationBar: _PremiumBottomNavBar(
         selectedIndex: _selectedIndex,
         onTap: (index) {
-          setState(() => _selectedIndex = index);
+          setState(() {
+            _showingIotMonitoring = false;
+            _showingMandiPrices = false;
+            _showingAiMarketAdvice = false;
+            _selectedIndex = index;
+          });
         },
       ),
     );
@@ -68,6 +160,7 @@ class _PremiumBottomNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     final fx = context.fx;
+    final visibleInset = 82 + bottomPadding;
 
     return SizedBox(
       height: 108 + bottomPadding,
@@ -76,7 +169,7 @@ class _PremiumBottomNavBar extends StatelessWidget {
         alignment: Alignment.bottomCenter,
         children: [
           Container(
-            height: 82 + bottomPadding,
+            height: visibleInset,
             padding: EdgeInsets.fromLTRB(12, 9, 12, 11 + bottomPadding),
             decoration: BoxDecoration(
               color: fx.surface,

@@ -14,6 +14,7 @@ class FasalXHeader extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.of(context).padding.top;
     final fx = context.fx;
+    final notifications = DemoNotificationCenter.instance;
 
     return Material(
       color: Colors.transparent,
@@ -47,15 +48,23 @@ class FasalXHeader extends StatelessWidget implements PreferredSizeWidget {
               ),
             ),
             const Spacer(),
-            _HeaderIconButton(
-              tooltip: 'Notifications',
-              icon: Icons.notifications_none_rounded,
-              showBadge: true,
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const NotificationsScreen(),
-                  ),
+            AnimatedBuilder(
+              animation: notifications,
+              builder: (context, _) {
+                final unreadCount = notifications.notifications
+                    .where((notification) => !notification.isRead)
+                    .length;
+                return _HeaderIconButton(
+                  tooltip: 'Notifications',
+                  icon: Icons.notifications_none_rounded,
+                  showBadge: unreadCount > 0,
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const NotificationsScreen(),
+                      ),
+                    );
+                  },
                 );
               },
             ),

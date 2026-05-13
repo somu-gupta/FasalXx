@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../services/auth_controller.dart';
 import '../services/theme_controller.dart';
 import '../theme/app_theme.dart';
+import 'auth_flow_screens.dart';
 
 const _green = Color(0xFF22C55E);
 const _deepGreen = Color(0xFF14532D);
 const _ink = Color(0xFF17251A);
 const _muted = Color(0xFF667366);
+const _border = Color(0xFFE4EDE0);
 
 enum _VerificationMethod { otp, link }
 
@@ -25,6 +28,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _dataSaver = false;
   bool _pushNotifications = true;
   bool _smsAlerts = false;
+  bool _languageLoaded = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_languageLoaded) return;
+    _language = context.read<AuthController>().selectedLanguage ?? _language;
+    _languageLoaded = true;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,17 +65,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           child: Text('English'),
                         ),
                         DropdownMenuItem(
-                          value: '\u0939\u093F\u0928\u094D\u0926\u0940',
-                          child: Text('\u0939\u093F\u0928\u094D\u0926\u0940'),
-                        ),
-                        DropdownMenuItem(
-                          value: '\u092E\u0930\u093E\u0920\u0940',
-                          child: Text('\u092E\u0930\u093E\u0920\u0940'),
+                          value: 'Hindi',
+                          child: Text('Hindi'),
                         ),
                       ],
                       onChanged: (value) {
                         if (value == null) return;
                         setState(() => _language = value);
+                        AuthController.instance.setLanguage(value);
                       },
                     ),
                   ),
@@ -74,6 +83,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   subtitle: 'Optimize app for slow rural networks',
                   trailing: Switch(
                     value: _dataSaver,
+                    activeThumbColor: _green,
                     onChanged: (value) => setState(() => _dataSaver = value),
                   ),
                 ),
@@ -103,6 +113,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   subtitle: 'Weather and market updates',
                   trailing: Switch(
                     value: _pushNotifications,
+                    activeThumbColor: _green,
                     onChanged: (value) =>
                         setState(() => _pushNotifications = value),
                   ),
@@ -113,6 +124,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   subtitle: 'Critical alerts without internet',
                   trailing: Switch(
                     value: _smsAlerts,
+                    activeThumbColor: _green,
                     onChanged: (value) => setState(() => _smsAlerts = value),
                   ),
                 ),
@@ -155,27 +167,35 @@ class ChangePasswordScreen extends StatefulWidget {
 }
 
 class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
-  final _email = TextEditingController(text: 'suresh.farmer@gmail.com');
-  final _newPassword = TextEditingController();
-  final _confirmPassword = TextEditingController();
-  _VerificationMethod _method = _VerificationMethod.otp;
+  final _email = TextEditingController();
   bool _loading = false;
-  bool _verificationSent = false;
-  bool _showNewPassword = false;
-  bool _showConfirmPassword = false;
   String? _emailError;
-  String? _passwordError;
+  bool _emailLoaded = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_emailLoaded) return;
+    final user = context.read<AuthController>().currentUser;
+    final contact = user?.phoneNumber.trim().isNotEmpty == true
+        ? user!.phoneNumber.trim()
+        : user?.email.trim();
+    if (contact != null && contact.isNotEmpty) {
+      _email.text = contact;
+    }
+    _emailLoaded = true;
+  }
 
   @override
   void dispose() {
     _email.dispose();
-    _newPassword.dispose();
-    _confirmPassword.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final fx = context.fx;
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
@@ -192,34 +212,34 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     child: Container(
                       width: 76,
                       height: 76,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFEAF7E8),
+                      decoration: BoxDecoration(
+                        color: fx.selectedFill,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.mark_email_read_outlined,
-                        color: _deepGreen,
+                        color: scheme.primary,
                         size: 38,
                       ),
                     ),
                   ),
                   const SizedBox(height: 18),
-                  const Center(
+                  Center(
                     child: Text(
                       'Verify Your Identity',
                       style: TextStyle(
-                        color: _ink,
+                        color: fx.textStrong,
                         fontSize: 22,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'To change your password, we will send a verification link or OTP to your registered email address.',
+                  Text(
+                    'To change your password, we will send an OTP to your registered mobile number or email address.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: _muted,
+                      color: fx.textMuted,
                       height: 1.45,
                       fontWeight: FontWeight.w700,
                     ),
@@ -229,46 +249,21 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   const SizedBox(height: 18),
                   TextField(
                     controller: _email,
+                    readOnly: true,
                     keyboardType: TextInputType.emailAddress,
-                    onChanged: (_) => setState(() => _emailError = null),
                     decoration: _inputDecoration(
                       context,
-                      'Registered email',
+                      'Registered email / mobile',
                       Icons.alternate_email_rounded,
                       errorText: _emailError,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  _VerificationSelector(
-                    method: _method,
-                    onChanged: (method) => setState(() => _method = method),
+                    ).copyWith(suffixIcon: const Icon(Icons.lock_outline)),
                   ),
                   const SizedBox(height: 16),
                   _PressableButton(
-                    label: _loading ? 'Sending...' : 'Send Verification',
+                    label: _loading ? 'Sending OTP...' : 'Send OTP',
                     icon: Icons.send_rounded,
                     onTap: _loading ? null : _sendVerification,
                   ),
-                  if (_verificationSent) ...[
-                    const SizedBox(height: 22),
-                    _PasswordResetForm(
-                      newPassword: _newPassword,
-                      confirmPassword: _confirmPassword,
-                      passwordError: _passwordError,
-                      showNewPassword: _showNewPassword,
-                      showConfirmPassword: _showConfirmPassword,
-                      onToggleNew: () {
-                        setState(() => _showNewPassword = !_showNewPassword);
-                      },
-                      onToggleConfirm: () {
-                        setState(
-                          () => _showConfirmPassword = !_showConfirmPassword,
-                        );
-                      },
-                      onChanged: () => setState(() => _passwordError = null),
-                      onSubmit: _updatePassword,
-                    ),
-                  ],
                 ],
               ),
             ),
@@ -279,38 +274,42 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   }
 
   Future<void> _sendVerification() async {
-    final email = _email.text.trim();
-    if (!_isValidEmail(email)) {
-      setState(() => _emailError = 'Enter a valid email address');
+    final user = context.read<AuthController>().currentUser;
+    final email = user?.email.trim();
+    if (user == null || email == null || email.isEmpty) {
+      setState(() => _emailError = 'Login again to use your registered contact');
       return;
+    }
+    final contact = user.phoneNumber.trim().isNotEmpty
+        ? user.phoneNumber.trim()
+        : email;
+    if (_email.text != contact) {
+      _email.text = contact;
     }
 
     setState(() => _loading = true);
-    await Future<void>.delayed(const Duration(milliseconds: 700));
+    final result = await AuthController.instance.startPasswordOtp(
+      identifier: email,
+      purpose: PasswordOtpPurpose.changePassword,
+    );
     if (!mounted) return;
-    setState(() {
-      _loading = false;
-      _verificationSent = true;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Verification sent successfully')),
-    );
-  }
-
-  void _updatePassword() {
-    final password = _newPassword.text;
-    if (!_isStrongPassword(password)) {
-      setState(() => _passwordError = 'Password does not meet requirements');
+    setState(() => _loading = false);
+    if (!result.isSuccess) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(result.message!)));
       return;
     }
-    if (password != _confirmPassword.text) {
-      setState(() => _passwordError = 'Passwords do not match');
-      return;
-    }
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Password changed successfully')),
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => PasswordOtpScreen(
+          identifier: email,
+          purpose: PasswordOtpPurpose.changePassword,
+          maskedTarget: result.maskedTarget,
+          expiresAt: result.expiresAt!,
+        ),
+      ),
     );
-    Navigator.of(context).pop();
   }
 }
 
@@ -325,6 +324,8 @@ class _PrivacyDataScreenState extends State<PrivacyDataScreen> {
   bool _shareAiData = false;
   bool _preciseLocation = false;
   bool _exporting = false;
+  bool _deactivating = false;
+  bool _deleting = false;
   _LocationAccess _locationAccess = _LocationAccess.denied;
 
   @override
@@ -347,6 +348,7 @@ class _PrivacyDataScreenState extends State<PrivacyDataScreen> {
                       'Help us improve crop disease detection algorithms anonymously.',
                   trailing: Switch(
                     value: _shareAiData,
+                    activeThumbColor: _green,
                     onChanged: (value) {
                       setState(() => _shareAiData = value);
                       _snack('AI data sharing preference updated');
@@ -360,6 +362,7 @@ class _PrivacyDataScreenState extends State<PrivacyDataScreen> {
                       'Required for accurate localized weather and mandi prices.\nStatus: ${_locationAccess.label}',
                   trailing: Switch(
                     value: _preciseLocation,
+                    activeThumbColor: _green,
                     onChanged: _toggleLocation,
                   ),
                 ),
@@ -384,7 +387,22 @@ class _PrivacyDataScreenState extends State<PrivacyDataScreen> {
                       : const Icon(Icons.chevron_right_rounded),
                   onTap: _exporting ? null : _downloadData,
                 ),
-                _DangerTile(onTap: _confirmDeleteAccount),
+                _DangerTile(
+                  icon: Icons.person_off_outlined,
+                  title: 'Deactivate Account',
+                  subtitle: _deactivating
+                      ? 'Deactivating your MongoDB user profile...'
+                      : 'Temporarily disable this account',
+                  onTap: _deactivating ? null : _confirmDeactivateAccount,
+                ),
+                _DangerTile(
+                  icon: Icons.delete_outline_rounded,
+                  title: 'Delete Account',
+                  subtitle: _deleting
+                      ? 'Deleting your MongoDB user profile...'
+                      : 'Permanently remove farm records and saved schemes',
+                  onTap: _deleting ? null : _confirmDeleteAccount,
+                ),
               ],
             ),
             const SizedBox(height: 16),
@@ -462,14 +480,60 @@ class _PrivacyDataScreenState extends State<PrivacyDataScreen> {
 
   Future<void> _downloadData() async {
     setState(() => _exporting = true);
-    await Future<void>.delayed(const Duration(milliseconds: 900));
+    try {
+      await AuthController.instance.refreshProfile();
+      final activities = await AuthController.instance.activities(limit: 50);
+      if (!mounted) return;
+      _snack('Profile refreshed with ${activities.length} recent activities');
+    } catch (error) {
+      if (!mounted) return;
+      _snack('Could not fetch account data: $error');
+    }
     if (!mounted) return;
     setState(() => _exporting = false);
-    _snack('Your data export is ready');
+  }
+
+  void _confirmDeactivateAccount() {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Deactivate account?'),
+        content: const Text(
+          'Your MongoDB user profile will be marked inactive. You will be signed out.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _deactivateAccount();
+            },
+            child: const Text('Deactivate'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _deactivateAccount() async {
+    setState(() => _deactivating = true);
+    final result = await AuthController.instance.deactivateAccount();
+    if (!mounted) return;
+    setState(() => _deactivating = false);
+    if (!result.isSuccess) {
+      _snack(result.message!);
+      return;
+    }
+    Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (_) => false,
+    );
   }
 
   void _confirmDeleteAccount() {
-    final controller = TextEditingController();
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -505,16 +569,6 @@ class _PrivacyDataScreenState extends State<PrivacyDataScreen> {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(height: 14),
-              TextField(
-                controller: controller,
-                obscureText: true,
-                decoration: _inputDecoration(
-                  context,
-                  'Enter password or OTP',
-                  Icons.lock_outline_rounded,
-                ),
-              ),
               const SizedBox(height: 16),
               Row(
                 children: [
@@ -532,9 +586,7 @@ class _PrivacyDataScreenState extends State<PrivacyDataScreen> {
                       ),
                       onPressed: () {
                         Navigator.of(context).pop();
-                        _snack(
-                          'Final confirmation required before account deletion',
-                        );
+                        _deleteAccount();
                       },
                       child: const Text('Confirm Delete'),
                     ),
@@ -545,7 +597,24 @@ class _PrivacyDataScreenState extends State<PrivacyDataScreen> {
           ),
         ),
       ),
-    ).whenComplete(controller.dispose);
+    );
+  }
+
+  Future<void> _deleteAccount() async {
+    setState(() => _deleting = true);
+    final result = await AuthController.instance.deleteAccount();
+    if (!mounted) return;
+    setState(() => _deleting = false);
+    if (!result.isSuccess) {
+      _snack(result.message ?? 'Could not delete account');
+      if (AuthController.instance.currentUser != null) return;
+    } else {
+      _snack('Account deleted');
+    }
+    Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (_) => false,
+    );
   }
 
   void _snack(String message) {
@@ -947,13 +1016,14 @@ class _PasswordResetForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final strength = _passwordStrength(newPassword.text);
+    final fx = context.fx;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Create New Password',
           style: TextStyle(
-            color: _ink,
+            color: fx.textStrong,
             fontSize: 18,
             fontWeight: FontWeight.w900,
           ),
@@ -976,16 +1046,16 @@ class _PasswordResetForm extends StatelessWidget {
           value: strength,
           minHeight: 8,
           borderRadius: BorderRadius.circular(999),
-          backgroundColor: const Color(0xFFE5EDE0),
+          backgroundColor: fx.fieldFill,
           valueColor: AlwaysStoppedAnimation<Color>(
-            strength < 0.5 ? Colors.orange : _green,
+            strength < 0.5 ? fx.warning : Theme.of(context).colorScheme.primary,
           ),
         ),
         const SizedBox(height: 10),
-        const Text(
+        Text(
           'Requirements: 8+ characters, 1 uppercase, 1 number, 1 special character',
           style: TextStyle(
-            color: _muted,
+            color: fx.textMuted,
             height: 1.35,
             fontWeight: FontWeight.w700,
           ),
@@ -1021,10 +1091,11 @@ class _VerificationSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fx = context.fx;
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: const Color(0xFFF1F8EF),
+        color: fx.fieldFill,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -1062,8 +1133,9 @@ class _SegmentButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fx = context.fx;
     return Material(
-      color: selected ? Colors.white : Colors.transparent,
+      color: selected ? fx.surface : Colors.transparent,
       borderRadius: BorderRadius.circular(13),
       child: InkWell(
         borderRadius: BorderRadius.circular(13),
@@ -1074,7 +1146,9 @@ class _SegmentButton extends StatelessWidget {
             label,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: selected ? _deepGreen : _muted,
+              color: selected
+                  ? Theme.of(context).colorScheme.primary
+                  : fx.textMuted,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -1126,7 +1200,6 @@ class _SettingsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fx = context.fx;
     return Semantics(
       container: true,
       label: title,
@@ -1137,8 +1210,8 @@ class _SettingsSection extends StatelessWidget {
             padding: const EdgeInsets.only(left: 2, bottom: 8),
             child: Text(
               title.toUpperCase(),
-              style: TextStyle(
-                color: fx.textMuted,
+              style: const TextStyle(
+                color: _muted,
                 fontSize: 12,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 0.6,
@@ -1348,25 +1421,35 @@ class _ActionTile extends StatelessWidget {
 }
 
 class _DangerTile extends StatelessWidget {
-  const _DangerTile({required this.onTap});
+  const _DangerTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
 
-  final VoidCallback onTap;
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final fx = context.fx;
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 6, 12, 12),
       decoration: BoxDecoration(
-        color: fx.dangerContainer,
+        color: const Color(0xFFFFF7F7),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: fx.danger.withAlpha(90)),
+        border: Border.all(color: const Color(0xFFFFCDD2)),
       ),
       child: _ActionTile(
-        icon: Icons.delete_outline_rounded,
-        title: 'Delete Account',
-        subtitle: 'Permanently remove farm records and saved schemes',
-        trailing: Icon(Icons.chevron_right_rounded, color: fx.danger),
+        icon: icon,
+        title: title,
+        subtitle: subtitle,
+        trailing: const Icon(
+          Icons.chevron_right_rounded,
+          color: Color(0xFFE53935),
+        ),
         onTap: onTap,
       ),
     );
@@ -1388,7 +1471,6 @@ class _TileShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fx = context.fx;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Row(
@@ -1401,8 +1483,8 @@ class _TileShell extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: TextStyle(
-                    color: fx.textStrong,
+                  style: const TextStyle(
+                    color: _ink,
                     fontSize: 15.8,
                     fontWeight: FontWeight.w900,
                   ),
@@ -1410,8 +1492,8 @@ class _TileShell extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: TextStyle(
-                    color: fx.textMuted,
+                  style: const TextStyle(
+                    color: _muted,
                     height: 1.3,
                     fontWeight: FontWeight.w600,
                   ),
@@ -1434,15 +1516,14 @@ class _IconBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fx = context.fx;
     return Container(
       width: 46,
       height: 46,
       decoration: BoxDecoration(
-        color: fx.selectedFill,
+        color: const Color(0xFFEAF7E8),
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 24),
+      child: Icon(icon, color: _deepGreen, size: 24),
     );
   }
 }
@@ -1465,11 +1546,13 @@ class _ElevatedCard extends StatelessWidget {
         color: fx.surface,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: fx.border),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: Color(0x10000000),
+            color: Colors.black.withAlpha(
+              Theme.of(context).brightness == Brightness.dark ? 70 : 16,
+            ),
             blurRadius: 22,
-            offset: Offset(0, 10),
+            offset: const Offset(0, 10),
           ),
         ],
       ),
@@ -1489,7 +1572,7 @@ class _MutedPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: fx.fieldFill,
+        color: fx.selectedFill,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
@@ -1536,8 +1619,8 @@ class _PressableButtonState extends State<_PressableButton> {
           child: FilledButton.icon(
             onPressed: widget.onTap,
             style: FilledButton.styleFrom(
-              backgroundColor: _green,
-              foregroundColor: Colors.white,
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(17),
               ),
@@ -1561,10 +1644,11 @@ InputDecoration _inputDecoration(
   String? errorText,
 }) {
   final fx = context.fx;
+  final scheme = Theme.of(context).colorScheme;
   return InputDecoration(
     labelText: label,
     errorText: errorText,
-    prefixIcon: Icon(icon, color: Theme.of(context).colorScheme.primary),
+    prefixIcon: Icon(icon, color: scheme.primary),
     filled: true,
     fillColor: fx.fieldFill,
     border: OutlineInputBorder(
@@ -1577,10 +1661,7 @@ InputDecoration _inputDecoration(
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(17),
-      borderSide: BorderSide(
-        color: Theme.of(context).colorScheme.primary,
-        width: 1.5,
-      ),
+      borderSide: BorderSide(color: scheme.primary, width: 1.5),
     ),
   );
 }
@@ -1629,8 +1710,12 @@ double _passwordStrength(String value) {
 }
 
 String _maskEmail(String email) {
+  final digits = email.replaceAll(RegExp(r'[^0-9]'), '');
+  if (digits.length >= 10 && !email.contains('@')) {
+    return '******${digits.substring(digits.length - 4)}';
+  }
   final parts = email.split('@');
-  if (parts.length != 2 || parts.first.length < 2) return 'su******@gmail.com';
+  if (parts.length != 2 || parts.first.length < 2) return 'Registered contact';
   return '${parts.first.substring(0, 2)}******@${parts.last}';
 }
 

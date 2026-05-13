@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../screens/farm_setup_screen.dart';
 import '../screens/main_screen.dart';
@@ -141,6 +144,12 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
   String _language = 'English';
 
   @override
+  void initState() {
+    super.initState();
+    _language = AuthController.instance.selectedLanguage ?? _language;
+  }
+
+  @override
   Widget build(BuildContext context) {
     return _AuthShell(
       child: Column(
@@ -224,6 +233,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _password = TextEditingController();
   bool _showPassword = false;
   bool _loading = false;
+  bool _resettingPassword = false;
   String? _emailError;
   String? _passwordError;
 
@@ -251,13 +261,13 @@ class _LoginScreenState extends State<LoginScreen> {
         children: [
           const _AuthSectionTitle(
             title: 'Login',
-            subtitle: 'Use your registered email to continue.',
+            subtitle: 'Use your registered email or mobile number to continue.',
           ),
           const SizedBox(height: 22),
           _AuthTextField(
             controller: _email,
-            label: 'Email',
-            icon: Icons.email_outlined,
+            label: 'Email / Mobile number',
+            icon: Icons.alternate_email_rounded,
             keyboardType: TextInputType.emailAddress,
             errorText: _emailError,
             onChanged: (_) => _validateLogin(),
@@ -287,16 +297,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 foregroundColor: _darkGreen,
                 textStyle: const TextStyle(fontWeight: FontWeight.w900),
               ),
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Password reset demo will be connected with Firebase later.',
-                    ),
-                  ),
-                );
-              },
-              child: const Text('Forgot Password?'),
+              onPressed: _resettingPassword ? null : _resetPassword,
+              child: Text(
+                _resettingPassword ? 'Sending OTP...' : 'Forgot Password?',
+              ),
             ),
           ),
           const SizedBox(height: 8),
@@ -322,11 +326,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _validateLogin() {
     final email = _email.text.trim();
+    final isPhone = RegExp(r'^[0-9+\-\s]{10,}$').hasMatch(email);
     setState(() {
       _emailError =
-          email.isEmpty || RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)
+          email.isEmpty ||
+              RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email) ||
+              isPhone
           ? null
-          : 'Invalid email';
+          : 'Invalid email or mobile';
       _passwordError = _password.text.isEmpty || _password.text.length >= 6
           ? null
           : 'Password must be at least 6 characters';
@@ -355,6 +362,44 @@ class _LoginScreenState extends State<LoginScreen> {
       context,
     ).pushAndRemoveUntil(MaterialPageRoute(builder: (_) => next), (_) => false);
   }
+
+  Future<void> _resetPassword() async {
+    final identifier = _email.text.trim();
+    final validEmail = RegExp(
+      r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+    ).hasMatch(identifier);
+    final validPhone = RegExp(r'^[0-9+\-\s]{10,}$').hasMatch(identifier);
+    if (identifier.isEmpty || (!validEmail && !validPhone)) {
+      setState(() => _emailError = 'Enter your registered email or mobile');
+      return;
+    }
+
+    setState(() => _resettingPassword = true);
+    final result = await AuthController.instance.startPasswordOtp(
+      identifier: identifier,
+      purpose: PasswordOtpPurpose.forgotPassword,
+    );
+    if (!mounted) return;
+    setState(() => _resettingPassword = false);
+
+    if (!result.isSuccess) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(result.message!)));
+      return;
+    }
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PasswordOtpScreen(
+          identifier: identifier,
+          purpose: PasswordOtpPurpose.forgotPassword,
+          maskedTarget: result.maskedTarget,
+          expiresAt: result.expiresAt!,
+        ),
+      ),
+    );
+  }
 }
 
 class SignUpScreen extends StatefulWidget {
@@ -367,6 +412,7 @@ class SignUpScreen extends StatefulWidget {
 class _SignUpScreenState extends State<SignUpScreen> {
   final _name = TextEditingController();
   final _email = TextEditingController();
+  final _mobile = TextEditingController();
   final _city = TextEditingController();
   final _password = TextEditingController();
   final _confirmPassword = TextEditingController();
@@ -379,6 +425,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   void dispose() {
     _name.dispose();
     _email.dispose();
+    _mobile.dispose();
     _city.dispose();
     _password.dispose();
     _confirmPassword.dispose();
@@ -388,11 +435,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool get _isValid {
     return _name.text.trim().isNotEmpty &&
         RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(_email.text.trim()) &&
+        (_mobile.text.trim().isEmpty ||
+            RegExp(r'^[0-9+\-\s]{10,}$').hasMatch(_mobile.text.trim())) &&
         _city.text.trim().isNotEmpty &&
         _state != null &&
-        _password.text.length >= 8 &&
-        RegExp(r'[A-Za-z]').hasMatch(_password.text) &&
-        RegExp(r'\d').hasMatch(_password.text) &&
+        _isStrongPassword(_password.text) &&
         _password.text == _confirmPassword.text &&
         !_loading;
   }
@@ -419,7 +466,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
           const SizedBox(height: 12),
           _AuthTextField(
             controller: _email,
-            label: 'Email',
+            label: 'Gmail',
             icon: Icons.email_outlined,
             keyboardType: TextInputType.emailAddress,
             errorText:
@@ -429,6 +476,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     ).hasMatch(_email.text.trim())
                 ? null
                 : 'Enter a valid email',
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: 12),
+          _AuthTextField(
+            controller: _mobile,
+            label: 'Mobile number (optional)',
+            icon: Icons.phone_outlined,
+            keyboardType: TextInputType.phone,
+            errorText:
+                _mobile.text.trim().isEmpty ||
+                    RegExp(r'^[0-9+\-\s]{10,}$').hasMatch(_mobile.text.trim())
+                ? null
+                : 'Enter a valid mobile number',
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: 12),
@@ -449,9 +509,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
             label: 'Password',
             icon: Icons.lock_outline_rounded,
             obscureText: !_showPassword,
-            errorText: _password.text.isEmpty || _password.text.length >= 8
+            errorText: _password.text.isEmpty || _isStrongPassword(_password.text)
                 ? null
-                : 'Use 8+ characters with letters and numbers',
+                : 'Use uppercase, lowercase, number, and special character',
             onChanged: (_) => setState(() {}),
             suffix: IconButton(
               tooltip: _showPassword ? 'Hide password' : 'Show password',
@@ -508,6 +568,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     final result = await AuthController.instance.signUp(
       name: _name.text,
       email: _email.text,
+      phoneNumber: _mobile.text,
       city: _city.text,
       state: _state!,
       password: _password.text,
@@ -526,6 +587,500 @@ class _SignUpScreenState extends State<SignUpScreen> {
       (_) => false,
     );
   }
+}
+
+class PasswordOtpScreen extends StatefulWidget {
+  const PasswordOtpScreen({
+    super.key,
+    required this.identifier,
+    required this.purpose,
+    required this.maskedTarget,
+    required this.expiresAt,
+  });
+
+  final String identifier;
+  final PasswordOtpPurpose purpose;
+  final String maskedTarget;
+  final DateTime expiresAt;
+
+  @override
+  State<PasswordOtpScreen> createState() => _PasswordOtpScreenState();
+}
+
+class _PasswordOtpScreenState extends State<PasswordOtpScreen> {
+  static const _otpLength = 6;
+  late DateTime _expiresAt;
+  Timer? _timer;
+  int _remainingSeconds = 0;
+  bool _verifying = false;
+  bool _resending = false;
+  String? _error;
+
+  final _controllers = List.generate(_otpLength, (_) => TextEditingController());
+  final _focusNodes = List.generate(_otpLength, (_) => FocusNode());
+
+  @override
+  void initState() {
+    super.initState();
+    _expiresAt = widget.expiresAt;
+    _startTimer();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    for (final controller in _controllers) {
+      controller.dispose();
+    }
+    for (final node in _focusNodes) {
+      node.dispose();
+    }
+    super.dispose();
+  }
+
+  String get _otp => _controllers.map((controller) => controller.text).join();
+  bool get _expired => _remainingSeconds <= 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final minutes = (_remainingSeconds ~/ 60).toString().padLeft(2, '0');
+    final seconds = (_remainingSeconds % 60).toString().padLeft(2, '0');
+
+    return _AuthShell(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Center(child: _BrandLogo(size: 76, iconSize: 38)),
+          const SizedBox(height: 18),
+          const _AuthSectionTitle(
+            title: 'OTP Verification',
+            subtitle: 'Enter the OTP sent to your registered mobile/email.',
+          ),
+          const SizedBox(height: 10),
+          Center(child: _ContactPill(label: widget.maskedTarget)),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              for (var index = 0; index < _otpLength; index++) ...[
+                Expanded(child: _OtpBox(index: index)),
+                if (index != _otpLength - 1) const SizedBox(width: 8),
+              ],
+            ],
+          ),
+          if (_error != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              _error!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Color(0xFFE53935),
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+          const SizedBox(height: 18),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 180),
+            child: Text(
+              _expired ? 'OTP expired' : 'OTP expires in $minutes:$seconds',
+              key: ValueKey(_remainingSeconds),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: _expired ? const Color(0xFFE53935) : _muted,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          _PrimaryAuthButton(
+            label: 'Verify OTP',
+            loading: _verifying,
+            onPressed: _otp.length == _otpLength && !_expired
+                ? _verifyOtp
+                : null,
+          ),
+          const SizedBox(height: 10),
+          TextButton(
+            onPressed: _resending ? null : _resendOtp,
+            child: Text(_resending ? 'Resending OTP...' : 'Resend OTP'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _OtpBox({required int index}) {
+    return SizedBox(
+      height: 58,
+      child: TextField(
+        controller: _controllers[index],
+        focusNode: _focusNodes[index],
+        enabled: !_verifying,
+        textAlign: TextAlign.center,
+        keyboardType: TextInputType.number,
+        inputFormatters: [
+          FilteringTextInputFormatter.digitsOnly,
+          LengthLimitingTextInputFormatter(1),
+        ],
+        style: const TextStyle(
+          color: _ink,
+          fontSize: 22,
+          fontWeight: FontWeight.w900,
+        ),
+        decoration: _inputDecoration(
+          label: '',
+          icon: Icons.numbers_rounded,
+        ).copyWith(
+          prefixIcon: null,
+          counterText: '',
+          contentPadding: EdgeInsets.zero,
+        ),
+        onChanged: (value) {
+          setState(() => _error = null);
+          if (value.isNotEmpty && index < _otpLength - 1) {
+            _focusNodes[index + 1].requestFocus();
+          } else if (value.isEmpty && index > 0) {
+            _focusNodes[index - 1].requestFocus();
+          }
+        },
+      ),
+    );
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+    void tick() {
+      final diff = _expiresAt.difference(DateTime.now()).inSeconds;
+      if (!mounted) return;
+      setState(() => _remainingSeconds = diff < 0 ? 0 : diff);
+    }
+
+    tick();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) => tick());
+  }
+
+  Future<void> _resendOtp() async {
+    setState(() {
+      _resending = true;
+      _error = null;
+      for (final controller in _controllers) {
+        controller.clear();
+      }
+    });
+    final result = await AuthController.instance.startPasswordOtp(
+      identifier: widget.identifier,
+      purpose: widget.purpose,
+    );
+    if (!mounted) return;
+    setState(() => _resending = false);
+    if (!result.isSuccess) {
+      setState(() => _error = result.message);
+      return;
+    }
+    _expiresAt = result.expiresAt!;
+    _startTimer();
+    _focusNodes.first.requestFocus();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('OTP sent to ${result.maskedTarget}.')),
+    );
+  }
+
+  Future<void> _verifyOtp() async {
+    if (_expired) {
+      setState(() => _error = 'OTP expired. Please resend OTP.');
+      return;
+    }
+    setState(() => _verifying = true);
+    await Future<void>.delayed(const Duration(milliseconds: 450));
+    final result = AuthController.instance.verifyPasswordOtp(_otp);
+    if (!mounted) return;
+    setState(() => _verifying = false);
+    if (!result.isSuccess) {
+      setState(() => _error = result.message);
+      return;
+    }
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => const CreateNewPasswordScreen()),
+    );
+  }
+}
+
+class CreateNewPasswordScreen extends StatefulWidget {
+  const CreateNewPasswordScreen({super.key});
+
+  @override
+  State<CreateNewPasswordScreen> createState() =>
+      _CreateNewPasswordScreenState();
+}
+
+class _CreateNewPasswordScreenState extends State<CreateNewPasswordScreen> {
+  final _password = TextEditingController();
+  final _confirmPassword = TextEditingController();
+  bool _showPassword = false;
+  bool _showConfirmPassword = false;
+  bool _loading = false;
+  String? _passwordError;
+  String? _confirmError;
+
+  @override
+  void dispose() {
+    _password.dispose();
+    _confirmPassword.dispose();
+    super.dispose();
+  }
+
+  bool get _canSubmit {
+    return _password.text.isNotEmpty &&
+        _confirmPassword.text.isNotEmpty &&
+        _passwordError == null &&
+        _confirmError == null &&
+        !_loading;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _AuthShell(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Center(child: _BrandLogo(size: 76, iconSize: 38)),
+          const SizedBox(height: 18),
+          const _AuthSectionTitle(
+            title: 'Create New Password',
+            subtitle: 'Use a strong password to protect your FasalX account.',
+          ),
+          const SizedBox(height: 22),
+          _AuthTextField(
+            controller: _password,
+            label: 'New Password',
+            icon: Icons.lock_outline_rounded,
+            obscureText: !_showPassword,
+            errorText: _passwordError,
+            onChanged: (_) => _validate(),
+            suffix: IconButton(
+              tooltip: _showPassword ? 'Hide password' : 'Show password',
+              onPressed: () => setState(() => _showPassword = !_showPassword),
+              icon: Icon(
+                _showPassword
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          _PasswordRules(password: _password.text),
+          const SizedBox(height: 12),
+          _AuthTextField(
+            controller: _confirmPassword,
+            label: 'Confirm Password',
+            icon: Icons.verified_user_outlined,
+            obscureText: !_showConfirmPassword,
+            errorText: _confirmError,
+            onChanged: (_) => _validate(),
+            suffix: IconButton(
+              tooltip: _showConfirmPassword ? 'Hide password' : 'Show password',
+              onPressed: () =>
+                  setState(() => _showConfirmPassword = !_showConfirmPassword),
+              icon: Icon(
+                _showConfirmPassword
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
+              ),
+            ),
+          ),
+          const SizedBox(height: 22),
+          _PrimaryAuthButton(
+            label: 'Update Password',
+            loading: _loading,
+            onPressed: _canSubmit ? _updatePassword : null,
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _validate() {
+    final password = _password.text;
+    setState(() {
+      _passwordError = password.isEmpty || _isStrongPassword(password)
+          ? null
+          : 'Use uppercase, lowercase, number, and special character';
+      _confirmError =
+          _confirmPassword.text.isEmpty || _confirmPassword.text == password
+          ? null
+          : 'Passwords do not match';
+    });
+  }
+
+  Future<void> _updatePassword() async {
+    _validate();
+    if (!_canSubmit) return;
+
+    setState(() => _loading = true);
+    final result = await AuthController.instance.updatePasswordAfterOtp(
+      _password.text,
+    );
+    if (!mounted) return;
+    setState(() => _loading = false);
+
+    if (!result.isSuccess) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(result.message!)));
+      return;
+    }
+
+    await AuthController.instance.logout();
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const _PasswordSuccessDialog(),
+    );
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (_) => false,
+    );
+  }
+}
+
+class _PasswordRules extends StatelessWidget {
+  const _PasswordRules({required this.password});
+
+  final String password;
+
+  @override
+  Widget build(BuildContext context) {
+    final rules = [
+      _Rule('8+ characters', password.length >= 8),
+      _Rule('Uppercase', RegExp(r'[A-Z]').hasMatch(password)),
+      _Rule('Lowercase', RegExp(r'[a-z]').hasMatch(password)),
+      _Rule('Number', RegExp(r'[0-9]').hasMatch(password)),
+      _Rule(
+        'Special character',
+        RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(password),
+      ),
+    ];
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final rule in rules)
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            decoration: BoxDecoration(
+              color: rule.ok ? _lightGreen : const Color(0xFFF3F4F6),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: rule.ok ? _softGreen : const Color(0xFFE5E7EB),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  rule.ok
+                      ? Icons.check_circle_rounded
+                      : Icons.radio_button_unchecked_rounded,
+                  color: rule.ok ? _darkGreen : _muted,
+                  size: 15,
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  rule.label,
+                  style: TextStyle(
+                    color: rule.ok ? _darkGreen : _muted,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _Rule {
+  const _Rule(this.label, this.ok);
+
+  final String label;
+  final bool ok;
+}
+
+class _ContactPill extends StatelessWidget {
+  const _ContactPill({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
+      decoration: BoxDecoration(
+        color: _lightGreen,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(color: _darkGreen, fontWeight: FontWeight.w900),
+      ),
+    );
+  }
+}
+
+class _PasswordSuccessDialog extends StatelessWidget {
+  const _PasswordSuccessDialog();
+
+  @override
+  Widget build(BuildContext context) {
+    Future<void>.delayed(const Duration(milliseconds: 1200), () {
+      if (context.mounted) Navigator.of(context).pop();
+    });
+
+    return AlertDialog(
+      content: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0.82, end: 1),
+        duration: const Duration(milliseconds: 420),
+        curve: Curves.easeOutBack,
+        builder: (context, value, child) {
+          return Transform.scale(scale: value, child: child);
+        },
+        child: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.check_circle_rounded, color: _darkGreen, size: 72),
+            SizedBox(height: 12),
+            Text(
+              'Password updated',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+            ),
+            SizedBox(height: 6),
+            Text(
+              'Redirecting to login...',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: _muted, fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+bool _isStrongPassword(String value) {
+  return value.length >= 8 &&
+      RegExp(r'[A-Z]').hasMatch(value) &&
+      RegExp(r'[a-z]').hasMatch(value) &&
+      RegExp(r'[0-9]').hasMatch(value) &&
+      RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(value);
 }
 
 class _StatePickerField extends StatelessWidget {

@@ -67,7 +67,7 @@ class ProfileData {
     return ProfileData(
       name: user.name,
       email: user.email,
-      phone: user.email,
+      phone: user.phoneNumber,
       farmName: farm.name.isEmpty ? 'First Farm' : farm.name,
       farmLocation: farm.location.isEmpty ? 'Not added' : farm.location,
       village: user.city,
@@ -102,7 +102,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   ProfileData _profile = ProfileData.demo();
-  String _language = 'Hindi';
+  String _language = 'English';
   bool _voiceAssistant = true;
   bool _notifications = true;
 
@@ -254,7 +254,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           email: user.email,
           city: updated.village,
           state: updated.state,
-          farm: user.farm,
+          phoneNumber: updated.phone,
+          farm: user.farm.copyWith(
+            size: _farmSizeOnly(updated.totalLand),
+            unit: _farmUnitFromText(updated.totalLand, user.farm.unit),
+            crops: _cropsFromText(updated.cropTypes),
+          ),
         ),
       );
     }
@@ -270,6 +275,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
         builder: (_) => const FarmSetupScreen(returnToPreviousScreen: true),
       ),
     );
+  }
+
+  String _farmSizeOnly(String value) {
+    final match = RegExp(r'(\d+(?:\.\d+)?)').firstMatch(value);
+    return match?.group(1) ?? value.trim();
+  }
+
+  String _farmUnitFromText(String value, String fallback) {
+    final lower = value.toLowerCase();
+    if (lower.contains('hectare')) return 'Hectare';
+    if (lower.contains('bigha')) return 'Bigha';
+    if (lower.contains('acre')) return 'Acre';
+    return fallback;
+  }
+
+  List<String> _cropsFromText(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty || trimmed.toLowerCase() == 'not added') {
+      return const [];
+    }
+    return trimmed
+        .split(',')
+        .map((crop) => crop.trim())
+        .where((crop) => crop.isNotEmpty)
+        .toList();
   }
 }
 
@@ -335,6 +365,31 @@ class _FarmerProfileCard extends StatelessWidget {
                         Expanded(
                           child: Text(
                             profile.location,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: fx.textMuted,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          profile.phone.trim().isEmpty
+                              ? Icons.alternate_email_rounded
+                              : Icons.phone_outlined,
+                          size: 17,
+                          color: fx.textMuted,
+                        ),
+                        SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            profile.phone.trim().isEmpty
+                                ? profile.email
+                                : profile.phone,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               color: fx.textMuted,
@@ -564,9 +619,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ),
                 _EditField(
                   controller: _phone,
-                  label: 'Gmail',
-                  icon: Icons.alternate_email_rounded,
-                  keyboardType: TextInputType.emailAddress,
+                  label: 'Mobile number (optional)',
+                  icon: Icons.phone_outlined,
+                  keyboardType: TextInputType.phone,
                 ),
               ],
             ),
@@ -642,12 +697,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       );
       return;
     }
+    final phone = _phone.text.trim();
+    if (phone.isNotEmpty && !RegExp(r'^[0-9+\-\s]{10,}$').hasMatch(phone)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid mobile number.')),
+      );
+      return;
+    }
 
     Navigator.of(context).pop(
       ProfileData(
         name: _name.text.trim(),
         email: widget.profile.email,
-        phone: _phone.text.trim(),
+        phone: phone,
         farmName: widget.profile.farmName,
         farmLocation: widget.profile.farmLocation,
         village: _village.text.trim(),
