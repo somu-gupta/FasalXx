@@ -124,8 +124,7 @@ class _SchemesScreenState extends State<SchemesScreen> {
     final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!mounted || opened) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Could not open ${scheme.portalHost}.')),
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(duration: const Duration(milliseconds: 2500), content: Text('Could not open ${scheme.portalHost}.')),
     );
   }
 }

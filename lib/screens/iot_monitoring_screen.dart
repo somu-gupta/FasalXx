@@ -67,7 +67,7 @@ class _IotMonitoringScreenState extends State<IotMonitoringScreen> {
   void _showSnack(String message) {
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ).showSnackBar(SnackBar(duration: const Duration(milliseconds: 2500), content: Text(message)));
   }
 
   @override

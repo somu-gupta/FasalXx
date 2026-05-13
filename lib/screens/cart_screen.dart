@@ -254,8 +254,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       _paymentMethod,
     );
     if (discount <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(duration: const Duration(milliseconds: 2500),
           content: Text(
             DemoCheckoutBackend.instance.couponMessage(
               coupon,
@@ -271,8 +270,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       _appliedCoupon = coupon;
       _couponDiscount = discount;
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(duration: const Duration(milliseconds: 2500),
         content: Text('${coupon.code} applied. You saved ${_money(discount)}.'),
       ),
     );
@@ -907,8 +905,7 @@ class _OrderHistoryCard extends StatelessWidget {
         cart.add(line.product);
       }
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(duration: const Duration(milliseconds: 2500),
         content: Text(
           '${order.totalItems} items added to cart from ${order.orderId}.',
         ),
@@ -930,18 +927,9 @@ class _OrderHistoryCard extends StatelessWidget {
       orderId: order.orderId,
       reason: reason,
     );
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${order.orderId} cancelled. Notification added.'),
-        action: SnackBarAction(
-          label: 'VIEW',
-          onPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const NotificationsScreen()),
-            );
-          },
-        ),
-      ),
+    showNotificationSnackBar(
+      context,
+      '${order.orderId} cancelled. Notification added.',
     );
   }
 }
@@ -1681,8 +1669,7 @@ class _TrackingActionCard extends StatelessWidget {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(duration: Duration(milliseconds: 2500),
                         content: Text(
                           'Demo support ticket created for this order.',
                         ),
@@ -1703,8 +1690,7 @@ class _TrackingActionCard extends StatelessWidget {
               Expanded(
                 child: FilledButton.icon(
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(duration: const Duration(milliseconds: 2500),
                         content: Text(
                           'Demo tracking refreshed for ${tracking.orderId}.',
                         ),
@@ -2075,8 +2061,7 @@ class _CouponCard extends StatelessWidget {
             builder: (_) => _CouponSheet(cart: cart),
           );
           if (coupon == null || !context.mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(duration: const Duration(milliseconds: 2500),
               content: Text(
                 '${coupon.code} is available. Apply it on the checkout screen.',
               ),
@@ -3603,8 +3588,7 @@ class _CouponSheetState extends State<_CouponSheet> {
     final code = _codeController.text.trim().toUpperCase();
     final coupon = DemoCheckoutBackend.instance.couponByCode(code);
     if (coupon == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(duration: Duration(milliseconds: 2500),
           content: Text(
             'Invalid coupon code. Try FASAL150, KISAN10 or UPI100.',
           ),

@@ -264,8 +264,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
     }
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Profile updated successfully.')),
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(duration: Duration(milliseconds: 2500), content: Text('Profile updated successfully.')),
     );
   }
 
@@ -692,15 +691,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   void _save() {
     if (_name.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter farmer name.')),
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(duration: Duration(milliseconds: 2500), content: Text('Please enter farmer name.')),
       );
       return;
     }
     final phone = _phone.text.trim();
     if (phone.isNotEmpty && !RegExp(r'^[0-9+\-\s]{10,}$').hasMatch(phone)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid mobile number.')),
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(duration: Duration(milliseconds: 2500), content: Text('Please enter a valid mobile number.')),
       );
       return;
     }
@@ -735,20 +732,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       if (image == null) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('No image selected.')));
+        ).showSnackBar(const SnackBar(duration: Duration(milliseconds: 2500), content: Text('No image selected.')));
         return;
       }
 
       setState(() => _profileImage = image);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(duration: Duration(milliseconds: 2500),
           content: Text('Profile photo selected. Tap Save to apply.'),
         ),
       );
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(duration: Duration(milliseconds: 2500),
           content: Text('Gallery could not be opened. Please try again.'),
         ),
       );

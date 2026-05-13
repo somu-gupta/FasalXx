@@ -129,7 +129,7 @@ class _AddressSelectionScreenState extends State<AddressSelectionScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('$error')));
+      ).showSnackBar(SnackBar(duration: const Duration(milliseconds: 2500), content: Text('$error')));
     }
   }
 

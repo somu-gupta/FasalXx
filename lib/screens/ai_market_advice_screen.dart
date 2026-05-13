@@ -77,8 +77,7 @@ class _AiMarketAdviceScreenState extends State<AiMarketAdviceScreen> {
   void _handleMic() {
     if (_isVoiceListening || _isThinking) return;
     setState(() => _isVoiceListening = true);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Listening for market question...')),
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(duration: Duration(milliseconds: 2500), content: Text('Listening for market question...')),
     );
 
     Timer(const Duration(milliseconds: 1500), () {

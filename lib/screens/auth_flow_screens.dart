@@ -352,7 +352,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!result.isSuccess) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(result.message!)));
+      ).showSnackBar(SnackBar(duration: const Duration(milliseconds: 2500), content: Text(result.message!)));
       return;
     }
     final next = AuthController.instance.hasCompletedFarmSetup
@@ -385,7 +385,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!result.isSuccess) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(result.message!)));
+      ).showSnackBar(SnackBar(duration: const Duration(milliseconds: 2500), content: Text(result.message!)));
       return;
     }
 
@@ -579,7 +579,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     if (!result.isSuccess) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(result.message!)));
+      ).showSnackBar(SnackBar(duration: const Duration(milliseconds: 2500), content: Text(result.message!)));
       return;
     }
     Navigator.of(context).pushAndRemoveUntil(
@@ -781,8 +781,7 @@ class _PasswordOtpScreenState extends State<PasswordOtpScreen> {
     _expiresAt = result.expiresAt!;
     _startTimer();
     _focusNodes.first.requestFocus();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('OTP sent to ${result.maskedTarget}.')),
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(duration: const Duration(milliseconds: 2500), content: Text('OTP sent to ${result.maskedTarget}.')),
     );
   }
 
@@ -928,7 +927,7 @@ class _CreateNewPasswordScreenState extends State<CreateNewPasswordScreen> {
     if (!result.isSuccess) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(result.message!)));
+      ).showSnackBar(SnackBar(duration: const Duration(milliseconds: 2500), content: Text(result.message!)));
       return;
     }
 

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../services/auth_controller.dart';
 import '../theme/app_theme.dart';
+import '../widgets/crop_illustration.dart';
 import '../widgets/fasalx_header.dart';
 import 'crop_screen.dart';
 
@@ -603,25 +604,6 @@ class _CropTab extends StatelessWidget {
   final bool isSelected;
   final VoidCallback? onTap;
 
-  String get _cropIcon {
-    switch (crop.toLowerCase()) {
-      case 'wheat':
-        return 'W';
-      case 'rice':
-        return 'R';
-      case 'soybean':
-        return 'S';
-      case 'tomato':
-        return 'T';
-      case 'cotton':
-        return 'C';
-      case 'maize':
-        return 'M';
-      default:
-        return crop.isEmpty ? '?' : crop.characters.first.toUpperCase();
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final fx = context.fx;
@@ -643,15 +625,16 @@ class _CropTab extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              _cropIcon,
-              style: TextStyle(
-                color: isSelected ? active : fx.textStrong,
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
+            SizedBox(
+              width: 38,
+              height: 38,
+              child: CropIllustration(
+                crop: crop,
+                selected: isSelected,
+                compact: true,
               ),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 4),
             Text(
               crop,
               maxLines: 1,
@@ -768,6 +751,15 @@ class _CropManagementModalState extends State<_CropManagementModal> {
                   children: [
                     for (final crop in _availableCrops)
                       FilterChip(
+                        avatar: SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CropIllustration(
+                            crop: crop,
+                            selected: _selectedCrops.contains(crop),
+                            compact: true,
+                          ),
+                        ),
                         label: Text(crop),
                         selected: _selectedCrops.contains(crop),
                         onSelected: (selected) {

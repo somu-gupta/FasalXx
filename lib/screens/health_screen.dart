@@ -75,8 +75,7 @@ class HealthScreen extends StatelessWidget {
       image = await pickDeviceImage();
     } catch (_) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(duration: const Duration(milliseconds: 2500),
           content: Text('Gallery could not be opened. Please try again.'),
         ),
       );
@@ -88,7 +87,7 @@ class HealthScreen extends StatelessWidget {
     if (image == null) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('No gallery image selected.')));
+      ).showSnackBar(SnackBar(duration: const Duration(milliseconds: 2500), content: Text('No gallery image selected.')));
       return;
     }
 
@@ -736,7 +735,7 @@ class _ExpertAssistanceCard extends StatelessWidget {
   static void _showDemoAction(BuildContext context, String message) {
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ).showSnackBar(SnackBar(duration: const Duration(milliseconds: 2500), content: Text(message)));
   }
 }
 
@@ -1074,8 +1073,7 @@ class _ScanScreenState extends State<ScanScreen> {
               children: [
                 IconButton.filledTonal(
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(duration: Duration(milliseconds: 2500),
                         content: Text('Demo flash toggled for crop scan.'),
                       ),
                     );
@@ -1243,8 +1241,7 @@ class _ScanScreenState extends State<ScanScreen> {
       image = await pickDeviceImage(fromCamera: fromCamera);
     } catch (_) {
       if (!mounted) return false;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(duration: const Duration(milliseconds: 2500),
           content: Text(
             fromCamera
                 ? 'Camera is not available on this device. Please use gallery.'
@@ -1258,8 +1255,7 @@ class _ScanScreenState extends State<ScanScreen> {
     if (!mounted) return false;
 
     if (image == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(duration: const Duration(milliseconds: 2500),
           content: Text(
             fromCamera
                 ? 'No camera photo selected.'
@@ -1400,8 +1396,7 @@ class ScanResultScreen extends StatelessWidget {
               Expanded(
                 child: FilledButton.icon(
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Scan saved in history.')),
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(duration: Duration(milliseconds: 2500), content: Text('Scan saved in history.')),
                     );
                     Navigator.of(context).push(
                       MaterialPageRoute(
@@ -1548,8 +1543,7 @@ class _ExpertChatScreenState extends State<ExpertChatScreen> {
               children: [
                 IconButton.filledTonal(
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(duration: Duration(milliseconds: 2500),
                         content: Text('Demo image attachment added to chat.'),
                       ),
                     );
@@ -1704,8 +1698,7 @@ class _CommunityDiscussionScreenState extends State<CommunityDiscussionScreen> {
   }
 
   void _sharePost(BuildContext context, CommunityPost post) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(duration: const Duration(milliseconds: 2500),
         content: Text('Demo share ready: ${post.tag} discussion copied.'),
       ),
     );
@@ -2384,8 +2377,7 @@ class _AskQuestionScreenState extends State<AskQuestionScreen> {
   Future<void> _submitQuestion() async {
     final question = _question.text.trim();
     if (question.length < 12) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(duration: Duration(milliseconds: 2500),
           content: Text(
             'Please describe the crop problem in a little more detail.',
           ),
@@ -2406,8 +2398,7 @@ class _AskQuestionScreenState extends State<AskQuestionScreen> {
     );
     if (!mounted) return;
     setState(() => _submitting = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(duration: Duration(milliseconds: 2500),
         content: Text('Question posted. Demo expert guidance added.'),
       ),
     );

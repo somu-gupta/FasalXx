@@ -87,15 +87,14 @@ class _CropScreenState extends State<CropScreen> {
         cropName: cropName,
       );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$cropName selected for this field.')),
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(duration: const Duration(milliseconds: 2500), content: Text('$cropName selected for this field.')),
       );
       _refresh();
     } on ApiFailure catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(error.message)));
+      ).showSnackBar(SnackBar(duration: const Duration(milliseconds: 2500), content: Text(error.message)));
     } finally {
       if (mounted) setState(() => _selecting = false);
     }

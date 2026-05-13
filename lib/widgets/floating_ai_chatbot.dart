@@ -285,8 +285,7 @@ class _ChatSheetState extends State<_ChatSheet> {
     }
 
     if (image == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(duration: Duration(milliseconds: 2500),
           content: Text(
             'Image select nahi hui. Chrome par photo attach kar sakte hain.',
           ),
@@ -300,8 +299,7 @@ class _ChatSheetState extends State<_ChatSheet> {
 
   void _handleMic() {
     setState(() => _isVoiceListening = true);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(duration: Duration(milliseconds: 2500),
         content: Text('Listening indicator on. Voice input coming soon.'),
       ),
     );

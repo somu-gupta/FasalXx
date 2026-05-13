@@ -6,6 +6,7 @@ import '../services/address_controller.dart';
 import '../services/auth_controller.dart';
 import '../services/backend_repositories.dart';
 import '../theme/app_theme.dart';
+import '../widgets/crop_illustration.dart';
 import 'address_selection_screen.dart';
 import 'auth_flow_screens.dart';
 import 'main_screen.dart';
@@ -205,7 +206,7 @@ class _FarmSetupScreenState extends State<FarmSetupScreen> {
                                     crossAxisCount: crossAxisCount,
                                     crossAxisSpacing: 12,
                                     mainAxisSpacing: 12,
-                                    childAspectRatio: 0.98,
+                                    childAspectRatio: 0.86,
                                   ),
                               itemBuilder: (context, index) {
                                 final crop = _visibleCrops[index];
@@ -291,14 +292,13 @@ class _FarmSetupScreenState extends State<FarmSetupScreen> {
         _locationDraft = draft;
         _location.text = _formatAddressDraft(draft);
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Current location added for this farm.')),
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(duration: Duration(milliseconds: 2500), content: Text('Current location added for this farm.')),
       );
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(error.toString())));
+      ).showSnackBar(SnackBar(duration: const Duration(milliseconds: 2500), content: Text(error.toString())));
     } finally {
       if (mounted) setState(() => _locating = false);
     }
@@ -313,8 +313,7 @@ class _FarmSetupScreenState extends State<FarmSetupScreen> {
       _locationDraft = draft;
       _location.text = _formatAddressDraft(draft);
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Map location saved for this farm.')),
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(duration: Duration(milliseconds: 2500), content: Text('Map location saved for this farm.')),
     );
   }
 
@@ -363,8 +362,7 @@ class _FarmSetupScreenState extends State<FarmSetupScreen> {
       _selectedCrops.add(normalizedCrop);
     });
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$normalizedCrop added to selected crops.')),
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(duration: const Duration(milliseconds: 2500), content: Text('$normalizedCrop added to selected crops.')),
     );
   }
 
@@ -717,27 +715,38 @@ class _CropCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: scheme.primary.withAlpha(isDark ? 44 : 24),
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: Icon(crop.icon, color: scheme.primary, size: 24),
-                ),
-                const Spacer(),
-                Text(
-                  crop.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: selected ? scheme.primary : fx.textStrong,
-                    fontSize: 15.5,
-                    fontWeight: FontWeight.w900,
+                SizedBox(
+                  height: 76,
+                  width: double.infinity,
+                  child: CropIllustration(
+                    crop: crop.name,
+                    selected: selected,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Icon(
+                      crop.icon,
+                      color: selected ? scheme.primary : fx.textMuted,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        crop.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: selected ? scheme.primary : fx.textStrong,
+                          fontSize: 15.5,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 5),
                 AnimatedOpacity(
                   opacity: selected ? 1 : 0,
                   duration: const Duration(milliseconds: 180),

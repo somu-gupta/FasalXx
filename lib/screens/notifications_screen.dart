@@ -7,6 +7,26 @@ const _ink = Color(0xFF17251A);
 
 enum NotificationType { alert, success, info, market }
 
+void showNotificationSnackBar(BuildContext context, String message) {
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(
+      SnackBar(
+        duration: const Duration(milliseconds: 2500),
+        content: Text(message),
+        action: SnackBarAction(
+          label: 'VIEW',
+          onPressed: () {
+            if (!context.mounted) return;
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+            );
+          },
+        ),
+      ),
+    );
+}
+
 // Lightweight notification model used by the screen state and card widget.
 class FasalNotification {
   const FasalNotification({
@@ -210,8 +230,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   void _markAllAsRead() {
     _center.markAllAsRead();
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('All notifications marked as read.')),
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(duration: Duration(milliseconds: 2500), content: Text('All notifications marked as read.')),
     );
   }
 
@@ -220,7 +239,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text(notification.title)));
+    ).showSnackBar(SnackBar(duration: const Duration(milliseconds: 2500), content: Text(notification.title)));
   }
 
   void _deleteNotification(int index) {
@@ -228,8 +247,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
+      ..showSnackBar(SnackBar(duration: const Duration(milliseconds: 2500),
           content: const Text('Notification removed'),
           action: SnackBarAction(
             label: 'UNDO',

@@ -73,7 +73,7 @@ class _MandiPriceScreenState extends State<MandiPriceScreen> {
   void _snack(String message) {
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ).showSnackBar(SnackBar(duration: const Duration(milliseconds: 2500), content: Text(message)));
   }
 
   Future<void> _openSellCropScreen() async {
@@ -171,7 +171,8 @@ class _MandiPriceScreenState extends State<MandiPriceScreen> {
                                     price: 'Rs ${price.modalPrice} per quintal',
                                     enabled: price.alertEnabled,
                                   );
-                              _snack(
+                              showNotificationSnackBar(
+                                context,
                                 price.alertEnabled
                                     ? 'You will be notified when ${price.crop} price increases.'
                                     : 'Alert disabled for ${price.crop}.',
@@ -523,8 +524,7 @@ class _SellCropScreenState extends State<SellCropScreen> {
     final price = int.tryParse(_expectedPriceController.text.trim()) ?? 0;
     final address = _addressController.text.trim();
     if (quantity <= 0 || price <= 0 || address.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(duration: Duration(milliseconds: 2500),
           content: Text('Add quantity, expected price, and pickup address.'),
         ),
       );

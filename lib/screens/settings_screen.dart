@@ -297,7 +297,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     if (!result.isSuccess) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(result.message!)));
+      ).showSnackBar(SnackBar(duration: const Duration(milliseconds: 2500), content: Text(result.message!)));
       return;
     }
     Navigator.of(context).pushReplacement(
@@ -620,7 +620,7 @@ class _PrivacyDataScreenState extends State<PrivacyDataScreen> {
   void _snack(String message) {
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ).showSnackBar(SnackBar(duration: const Duration(milliseconds: 2500), content: Text(message)));
   }
 }
 
@@ -907,7 +907,7 @@ class _LegalDocumentScreenState extends State<LegalDocumentScreen> {
   void _snack(String message) {
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ).showSnackBar(SnackBar(duration: const Duration(milliseconds: 2500), content: Text(message)));
   }
 }
 

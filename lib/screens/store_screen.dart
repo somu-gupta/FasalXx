@@ -358,8 +358,7 @@ class _StoreScreenState extends State<StoreScreen> {
           onAdd: () {
             CartScope.read(context).add(product.toCartProduct());
             Navigator.of(context).pop();
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('${product.name} added to cart')),
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(duration: const Duration(milliseconds: 2500), content: Text('${product.name} added to cart')),
             );
           },
         );
